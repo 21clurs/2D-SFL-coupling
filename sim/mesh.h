@@ -19,6 +19,9 @@ class Mesh
         const Eigen::Vector2d prev_neighbor(const int vertIndex);
         const Eigen::Vector2d next_neighbor(const int vertIndex);
 
+        double face_length(const int faceIndex);
+        const Eigen::Vector2d calc_vertex_normal(const int vertIndex);
+        const Eigen::Vector2d calc_face_normal(const int faceIndex);
     private:
         // these are populated once at construction
         std::vector<int> vertsPrevFace;

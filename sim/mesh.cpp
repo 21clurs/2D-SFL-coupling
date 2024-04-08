@@ -50,3 +50,33 @@ void Mesh::update_neighbor_face_vecs()
         vertsNextFace[s_index] = i;
     }
 }
+
+double Mesh::face_length(const int faceIndex){
+    Eigen::Vector2i endpts = verts_from_face(faceIndex);
+    return (verts[endpts[0]]-verts[endpts[1]]).norm();
+}
+const Eigen::Vector2d Mesh::calc_vertex_normal(const int vertIndex){
+    Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
+
+    Eigen::Vector2d n_a = calc_face_normal(adjacent_face_inds[0]);
+    Eigen::Vector2d n_b = calc_face_normal(adjacent_face_inds[1]);
+
+    double d_a = face_length(adjacent_face_inds[0]);
+    double d_b = face_length(adjacent_face_inds[1]);
+
+    Eigen::Vector2d n = (d_a*n_a + d_b*n_b)/(d_a+d_b);
+    n.normalize();
+    return n;
+}
+const Eigen::Vector2d Mesh::calc_face_normal(const int faceIndex){
+    Eigen::Vector2i endpts = verts_from_face(faceIndex);
+    Eigen::Vector2d x_s = verts[endpts[0]];
+    Eigen::Vector2d x_t = verts[endpts[1]];
+
+    // 90-deg clockwise rotation matrix
+    Eigen::Matrix2d rotate;
+    rotate << 0, 1, -1, 0;
+    Eigen::Vector2d n = rotate * (x_t-x_s);
+    n.normalize();
+    return n;
+}
