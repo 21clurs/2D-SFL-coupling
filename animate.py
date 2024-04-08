@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 vList = []
 fList = []
 
-with open("square.txt","r") as curr_frame_file:
+with open("./sim/out/tester.txt","r") as curr_frame_file:
     for row in curr_frame_file:
         r = row.split(" ")
         if r[0] == 'v':
