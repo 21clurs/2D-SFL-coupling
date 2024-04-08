@@ -1,0 +1,9 @@
+# binary files
+*.out
+
+# images/output
+outFrames/*
+inputObjs/*
+ignore/*
+.DS_Store
+.vscode/*
