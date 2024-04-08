@@ -1,5 +1,5 @@
 #include "generateshapes.h"
-void generateCircle(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
+void GenerateShape::circle(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
   float theta = 2*M_PI/n;
   
   int r=1;
@@ -12,7 +12,7 @@ void generateCircle(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eige
       faces[i] = Eigen::Vector2i(i,(i+1)%n);
   }
 }
-void generateSquare(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
+void GenerateShape::square(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
     assert(((void)"n is a multiple of 4 when generating a square", n%4==0));
     
     int nPerSide = n/4;
@@ -32,7 +32,7 @@ void generateSquare(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eige
     for(uint i=0; i<n; i++)
         faces[i] = Eigen::Vector2i(i,(i+1)%n);
 }
-void generateEllipse(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
+void GenerateShape::ellipse(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
     float theta = 2*M_PI/n;
     
     int r=1;
