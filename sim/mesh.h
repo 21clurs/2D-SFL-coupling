@@ -22,12 +22,16 @@ class Mesh
         double face_length(const int faceIndex);
         const Eigen::Vector2d calc_vertex_normal(const int vertIndex);
         const Eigen::Vector2d calc_face_normal(const int faceIndex);
+
+        double signed_mean_curvature(const int vertIndex);
+        double solid_angle(const int vertIndex);
     private:
         // these are populated once at construction
         std::vector<int> vertsPrevFace;
         std::vector<int> vertsNextFace;
 
         void update_neighbor_face_vecs();
+        double turning_angle(Eigen::Vector2d a, Eigen::Vector2d b);
 };
 
 #endif

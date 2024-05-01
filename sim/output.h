@@ -3,7 +3,6 @@
 
 #include "mesh.h"
 
-void outputFrame(Mesh& m, std::string filename);
-void outputFrame(Mesh& m, std::string filename, std::string filelocation);
+void outputFrame(Mesh& m, std::string filename, std::string filelocation="./out/");
 
 #endif

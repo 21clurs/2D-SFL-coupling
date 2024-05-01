@@ -23,7 +23,7 @@ int main(){
   int n = 32;
   std::vector<Vector2d> verts = std::vector<Vector2d>(n,Vector2d(0.0,0.0));
   std::vector<Vector2i> faces = std::vector<Vector2i>(n,Vector2i(0,0));
-  GenerateShape::oscillation(n,verts,faces);
+  GenerateShape::semicircle_h(n,verts,faces);
   Mesh circMesh(verts,faces);
   for (int i=0; i<n; i++){
     //std::cout << circMesh.next_neighbor(i)<< std::endl;

@@ -80,3 +80,19 @@ const Eigen::Vector2d Mesh::calc_face_normal(const int faceIndex){
     n.normalize();
     return n;
 }
+double Mesh::signed_mean_curvature(const int vertIndex){
+    Eigen::Vector2d t_prev = verts[vertIndex] - prev_neighbor(vertIndex);
+    Eigen::Vector2d t_next = next_neighbor(vertIndex) - verts[vertIndex];
+
+    double phi = turning_angle(t_prev, t_next);
+    return 2*phi/(t_prev.norm() + t_next.norm());
+}
+double Mesh::turning_angle(Eigen::Vector2d a, Eigen::Vector2d b){
+    a.normalize();
+    b.normalize();
+    // FIX THIS LATER
+    double crossprod = a[0]*b[1] - a[1]*b[0];
+    double dotprod = a[0]*b[0] + a[1]*b[1];
+
+    return atan2(crossprod,dotprod);
+}
