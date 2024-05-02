@@ -1,9 +1,22 @@
-#include "output.h"
+#include "sim.h"
 
 #include <iostream>
 #include <fstream> 
+#include "generateshapes.h"
 
-void outputFrame(Mesh &m, std::string filename, std::string filelocation){
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector2i;
+
+Sim::Sim(Mesh& m, int n, float dt):
+    m(m),
+    n(n),
+    dt(dt)
+{
+}
+
+
+bool Sim::outputFrame(std::string filename, std::string filelocation){
     std::ofstream file(filelocation+filename);
     for (uint i=0; i<m.verts.size(); i++)
         file<<"v "<<m.verts[i][0]<<" "<<m.verts[i][1]<<std::endl;
@@ -18,4 +31,16 @@ void outputFrame(Mesh &m, std::string filename, std::string filelocation){
     for (uint i=0; i<m.faces.size(); i++)
         file<<"f "<<m.faces[i][0]<<" "<<m.faces[i][1]<<std::endl;
     file.close();
+
+    return true;
+}
+
+void Sim::step_sim(int frame){
+    step_advect();
+}
+
+void Sim::step_advect(){
+    for (size_t i=0; i<n; i++){
+        m.verts[i] = m.verts[i] + m.vels[i]*dt;
+    }
 }

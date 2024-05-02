@@ -2,8 +2,8 @@
 #include <Eigen/Dense>
 #include <math.h>
 
+#include "sim.h"
 #include "mesh.h"
-#include "output.h"
 #include "generateshapes.h"
 
 using Eigen::MatrixXd;
@@ -23,13 +23,24 @@ int main(){
   int n = 32;
   std::vector<Vector2d> verts = std::vector<Vector2d>(n,Vector2d(0.0,0.0));
   std::vector<Vector2i> faces = std::vector<Vector2i>(n,Vector2i(0,0));
-  GenerateShape::semicircle_h(n,verts,faces);
-  Mesh circMesh(verts,faces);
+  std::vector<Vector2d> vels = std::vector<Vector2d>(n,Vector2d(1.0,0.0));
+  GenerateShape::circle(n,verts,faces);
+  Mesh circMesh(verts,faces,vels);
   for (int i=0; i<n; i++){
     //std::cout << circMesh.next_neighbor(i)<< std::endl;
+    //std::cout << circMesh.vels[i]<< std::endl;
   }
-  
-  outputFrame(circMesh,"tester.txt");
+
+  float dt = 1.0/10.0;
+
+  Sim s(circMesh, n, dt);
+
+  //s.outputFrame(circMesh,"tester.txt");
+
+  for (int i=0; i<50; i++){
+    s.step_sim(i);
+    s.outputFrame(std::to_string(i)+".txt");
+  }
 
   return 0;
 }
