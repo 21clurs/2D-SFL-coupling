@@ -31,13 +31,13 @@ int main(){
     //std::cout << circMesh.vels[i]<< std::endl;
   }
 
-  float dt = 1.0/10.0;
+  float dt = 1.0/60.0;
 
   Sim s(circMesh, n, dt);
 
   //s.outputFrame(circMesh,"tester.txt");
 
-  for (int i=0; i<50; i++){
+  for (int i=0; i<30; i++){
     s.step_sim(i);
     s.outputFrame(std::to_string(i)+".txt");
   }

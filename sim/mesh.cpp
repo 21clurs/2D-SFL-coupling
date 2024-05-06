@@ -55,6 +55,10 @@ double Mesh::face_length(const int faceIndex){
     Eigen::Vector2i endpts = verts_from_face(faceIndex);
     return (verts[endpts[0]]-verts[endpts[1]]).norm();
 }
+
+double Mesh::vert_area(const int vertIndex){
+    return (1.0/2.0)*(face_length(faces_from_vert(vertIndex)[0])+face_length(faces_from_vert(vertIndex)[1]));
+}
 const Eigen::Vector2d Mesh::calc_vertex_normal(const int vertIndex){
     Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
 
@@ -79,6 +83,23 @@ const Eigen::Vector2d Mesh::calc_face_normal(const int faceIndex){
     Eigen::Vector2d n = rotate * (x_t-x_s);
     n.normalize();
     return n;
+}
+const Eigen::Vector2d Mesh::calc_face_tangent(const int faceIndex){
+    // clockwise tangent?
+    Eigen::Vector2i endpts = verts_from_face(faceIndex);
+    Eigen::Vector2d x_s = verts[endpts[0]];
+    Eigen::Vector2d x_t = verts[endpts[1]];
+
+    Eigen::Vector2d t = -(x_t-x_s);
+    t.normalize();
+    return t;
+}
+double Mesh::solid_angle(const int vertIndex){
+    Eigen::Vector2d t_prev = verts[vertIndex] - prev_neighbor(vertIndex);
+    Eigen::Vector2d t_next = next_neighbor(vertIndex) - verts[vertIndex];
+
+    double theta = M_PI - turning_angle(t_prev,t_next);
+    return theta/(2*M_PI);
 }
 double Mesh::signed_mean_curvature(const int vertIndex){
     Eigen::Vector2d t_prev = verts[vertIndex] - prev_neighbor(vertIndex);

@@ -20,8 +20,11 @@ class Mesh
         const Eigen::Vector2d next_neighbor(const int vertIndex);
 
         double face_length(const int faceIndex);
+        double vert_area(const int vertIndex);
+
         const Eigen::Vector2d calc_vertex_normal(const int vertIndex);
-        const Eigen::Vector2d calc_face_normal(const int faceIndex);
+        const Eigen::Vector2d calc_face_normal(const int faceIndex);    // outward normal
+        const Eigen::Vector2d calc_face_tangent(const int faceIndex);   // clockwise tangent
 
         double signed_mean_curvature(const int vertIndex);
         double solid_angle(const int vertIndex);
