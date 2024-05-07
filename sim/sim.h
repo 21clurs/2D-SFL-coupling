@@ -18,9 +18,12 @@ class Sim
     private:
         int n;
         float dt;
-        float gravity = -1.0;
-        
         Mesh m;
+        
+        float sigma, sigma_SL, sigma_SA;
+        float rho;
+        Eigen::Vector2d gravity;
+        
 
         void step_advect();
         void step_HHD();

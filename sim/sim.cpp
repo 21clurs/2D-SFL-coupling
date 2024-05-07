@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream> 
+#include <stdexcept>
 #include "generateshapes.h"
 #include "boundaryintegral.h"
 
@@ -12,7 +13,12 @@ using Eigen::Vector2i;
 Sim::Sim(Mesh& m, int n, float dt):
     n(n),
     dt(dt),
-    m(m)
+    m(m),
+    sigma(1.0),
+    sigma_SL(1.0),
+    sigma_SA(1.0),
+    rho(1.0),
+    gravity(Eigen::Vector2d({0.0, -1.0}))
 {
 }
 
@@ -190,7 +196,78 @@ void Sim::step_HHD(){
 }
 
 void Sim::step_BEM(){
-    // BC
+    
+    // Setting BCs
+    int N = m.verts.size();
+    double triple_junction_virtual_width = 0.25 * m.calc_avg_face_length();
+
+    Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
+    Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
+
+    std::vector<bool> face_is_solid = m.get_solid_faces();
+
+    Eigen::Vector2d v_solid =  Eigen::Vector2d({0.0, 0.0}); //placeholder
+
+    for (size_t i=0; i<N; i++){
+        Eigen::Vector2i incident_faces = m.faces_from_vert(i);
+        // 'air' vertex: if it is explicitly air vertex or neither incident face is a solid face
+        if (m.is_air[i] || (!face_is_solid[incident_faces[0]] && !face_is_solid[incident_faces[1]])){
+            double H_i = m.signed_mean_curvature(i);
+            
+            BC_p[i] = sigma * H_i * dt;     // known
+            BC_dpdn[i] = 0;                 // unknown
+        }
+        // 'solid' vertex: if it is explicity solid vertex or both incident faces are solid faces
+        else if (m.is_solid[i] || (face_is_solid[incident_faces[0]] && face_is_solid[incident_faces[1]])){
+            Eigen::Vector2d n_i = m.calc_vertex_normal(i);
+
+            BC_p[i] = 0;
+            BC_dpdn[i] = n_i.dot(m.vels[i] + gravity*dt - v_solid) * rho;
+        }
+        // triple junction
+        else{
+            Eigen::Vector2d n_solid_outward;
+            int solid_vert, air_vert;
+            if (face_is_solid[incident_faces[0]]){
+                n_solid_outward = m.calc_face_normal(incident_faces[0]);
+                
+                // TODO: make this nicer somehow? messy...
+                Eigen::Vector2i solid_face_verts = m.verts_from_face(incident_faces[0]);
+                solid_vert = (i == solid_face_verts[0])? solid_face_verts[1]: solid_face_verts[0];
+                Eigen::Vector2i air_face_verts = m.verts_from_face(incident_faces[1]);
+                air_vert = (i == air_face_verts[0])? air_face_verts[1]: air_face_verts[0];
+            }
+            else if (face_is_solid[incident_faces[1]]){
+                n_solid_outward = m.calc_face_normal(incident_faces[1]);
+
+                // TODO: make this nicer somehow? messy...
+                Eigen::Vector2i solid_face_verts = m.verts_from_face(incident_faces[1]);
+                solid_vert = (i == solid_face_verts[0])? solid_face_verts[1]: solid_face_verts[0];
+                Eigen::Vector2i air_face_verts = m.verts_from_face(incident_faces[0]);
+                air_vert = (i == air_face_verts[0])? air_face_verts[1]: air_face_verts[0];
+            }
+            else
+                throw std::logic_error("This should not have been reached-- triple junction should fall into one of the above statements");
+
+            Eigen::Vector2d t_solid_outward = m.verts[i] - m.verts[solid_vert];
+            t_solid_outward.normalize();
+            Eigen::Vector2d t_air_outward = m.verts[i] - m.verts[air_vert];
+            t_air_outward.normalize();
+
+            Eigen::Vector2d st_force_SL = -t_solid_outward * sigma * sigma_SL;
+            Eigen::Vector2d st_force_SA = t_solid_outward * sigma * sigma_SA;
+            Eigen::Vector2d st_force_LA = -t_air_outward * sigma;
+
+            Eigen::Vector2d st_force_combined = st_force_SL + st_force_SA + st_force_LA;
+            double pressure_jump_normal_to_triple_junction = st_force_combined.dot(-t_solid_outward) / triple_junction_virtual_width;
+
+            BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
+            BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - v_solid) * rho;
+        }
+    }
+
+    // BEM
+
 }
 
 Eigen::Vector2d Sim::lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q){

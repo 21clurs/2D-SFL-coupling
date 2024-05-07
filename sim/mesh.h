@@ -22,6 +22,7 @@ class Mesh
         const Eigen::Vector2d next_neighbor(const int vertIndex);
 
         double face_length(const int faceIndex);
+        double calc_avg_face_length();
         double vert_area(const int vertIndex);
 
         const Eigen::Vector2d calc_vertex_normal(const int vertIndex);
@@ -33,6 +34,11 @@ class Mesh
 
         void laplacian_smoothing();
 
+        std::vector<bool> is_air;
+        std::vector<bool> is_solid;
+        std::vector<bool> is_triple;
+
+        std::vector<bool> get_solid_faces();
     private:
         // these are populated once at construction
         std::vector<int> vertsPrevFace;
@@ -41,9 +47,6 @@ class Mesh
         void update_neighbor_face_vecs();
         double turning_angle(Eigen::Vector2d a, Eigen::Vector2d b);
 
-        std::vector<bool> is_air;
-        std::vector<bool> is_solid;
-        std::vector<bool> is_triple;
 };
 
 #endif

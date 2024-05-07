@@ -77,6 +77,16 @@ void Mesh::laplacian_smoothing()
     verts = verts_smoothed;
 }
 
+std::vector<bool> Mesh::get_solid_faces(){
+    std::vector<bool> solid_faces = std::vector<bool>(faces.size(), false);
+    Eigen::Vector2i endpts;
+    for (size_t i=0; i<faces.size(); i++){
+        endpts = verts_from_face(i);
+        solid_faces[i] = (is_solid[endpts[0]] || is_solid[endpts[1]]);
+    }
+    return solid_faces;
+}
+
 void Mesh::update_neighbor_face_vecs()
 {
     int s_index,t_index;
@@ -92,6 +102,13 @@ void Mesh::update_neighbor_face_vecs()
 double Mesh::face_length(const int faceIndex){
     Eigen::Vector2i endpts = verts_from_face(faceIndex);
     return (verts[endpts[0]]-verts[endpts[1]]).norm();
+}
+
+double Mesh::calc_avg_face_length(){
+    double total_face_length = 0;
+    for (size_t i=0; i<faces.size(); i++)
+        total_face_length += face_length(i);
+    return total_face_length/faces.size();
 }
 
 double Mesh::vert_area(const int vertIndex){
