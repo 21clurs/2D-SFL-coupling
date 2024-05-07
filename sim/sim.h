@@ -26,6 +26,8 @@ class Sim
         void step_HHD();
         void step_BEM();
 
+        void remesh();
+
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);
 
         double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);

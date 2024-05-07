@@ -24,7 +24,7 @@ int main(){
   std::vector<Vector2d> verts = std::vector<Vector2d>(n,Vector2d(0.0,0.0));
   std::vector<Vector2i> faces = std::vector<Vector2i>(n,Vector2i(0,0));
   std::vector<Vector2d> vels = std::vector<Vector2d>(n,Vector2d(1.0,0.0));
-  GenerateShape::circle(n,verts,faces);
+  GenerateShape::semicircle_v(n,verts,faces);
   Mesh circMesh(verts,faces,vels);
   for (int i=0; i<n; i++){
     //std::cout << circMesh.next_neighbor(i)<< std::endl;
@@ -37,7 +37,7 @@ int main(){
 
   //s.outputFrame(circMesh,"tester.txt");
 
-  for (int i=0; i<30; i++){
+  for (int i=0; i<1; i++){
     s.step_sim(i);
     s.outputFrame(std::to_string(i)+".txt");
   }

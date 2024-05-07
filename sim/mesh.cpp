@@ -9,6 +9,11 @@ Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen
     vertsPrevFace = std::vector<int>(verts.size(),0);
     vertsNextFace = std::vector<int>(verts.size(),0);
     update_neighbor_face_vecs();
+
+    // defaults to purely liquid-air boundary?
+    is_air = std::vector<bool>(verts.size(), true);
+    is_solid = std::vector<bool>(verts.size(), false);
+    is_triple = std::vector<bool>(verts.size(), false);
 }
 
 Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const  std::vector<Eigen::Vector2d>& in_vels):
@@ -19,7 +24,18 @@ Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen
     vertsPrevFace = std::vector<int>(verts.size(),0);
     vertsNextFace = std::vector<int>(verts.size(),0);
     update_neighbor_face_vecs();
+
+    // defaults to purely liquid-air boundary?
+    is_air = std::vector<bool>(verts.size(), true);
+    is_solid = std::vector<bool>(verts.size(), false);
+    is_triple = std::vector<bool>(verts.size(), false);
 }   
+
+void Mesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple){
+    is_air = air;
+    is_solid = solid;
+    is_triple = triple;
+}
 
 // returns the indices of the vertices at the endpts of the given face
 const Eigen::Vector2i Mesh::verts_from_face(const int faceIndex)
@@ -39,10 +55,32 @@ const Eigen::Vector2d Mesh::next_neighbor(const int vertIndex)
     return verts[faces[vertsNextFace[vertIndex]][1]];
 }
 
+void Mesh::laplacian_smoothing()
+{
+    std::vector<Eigen::Vector2d> C = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
+    std::vector<Eigen::Vector2d> proj = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
+    std::vector<Eigen::Vector2d> verts_smoothed = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
+
+    Eigen::Vector2d n_i;
+    for (size_t i=0; i<verts.size(); i++){
+        if (is_triple[i]){
+            C[i] = verts[i];
+            proj[i] = Eigen::Vector2d(0.0, 0.0);
+        }
+        else{
+            n_i = calc_vertex_normal(i);
+            C[i] = 0.5*(prev_neighbor(i) + next_neighbor(i));
+            proj[i] = (n_i*n_i.transpose())*(verts[i]-C[i]);
+        }
+        verts_smoothed[i] = C[i] + proj[i];
+    }
+    verts = verts_smoothed;
+}
+
 void Mesh::update_neighbor_face_vecs()
 {
     int s_index,t_index;
-    for (uint i=0; i<faces.size(); i++){
+    for (size_t i=0; i<faces.size(); i++){
         s_index = faces[i][0];
         t_index = faces[i][1];
 

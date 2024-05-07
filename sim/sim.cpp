@@ -38,6 +38,7 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
 
 void Sim::step_sim(int frame){
     step_advect();
+    remesh();
     step_HHD();
     step_BEM();
 }
@@ -51,7 +52,7 @@ void Sim::step_advect(){
 void Sim::step_HHD(){
     const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
     const std::vector<Eigen::Vector2d> quadrature_DE = BoundaryIntegral::tanh_sinh_quadrature();
-    
+
     const double negOneOver2pi = -1.0/(2*M_PI);
 
     std::vector<double> dPhidn(n, 0.0);
@@ -199,4 +200,8 @@ Eigen::Vector2d Sim::lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double
 
 double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
    return a.x()*b.y() - a.y()*b.x();
+}
+
+void Sim::remesh(){
+    m.laplacian_smoothing();
 }
