@@ -46,6 +46,14 @@ const Eigen::Vector2i Mesh::faces_from_vert(const int vertIndex)
 {
     return Eigen::Vector2i(vertsPrevFace[vertIndex], vertsNextFace[vertIndex]);
 }
+const int Mesh::prev_neighbor_index(const int vertIndex)
+{
+    return faces[vertsPrevFace[vertIndex]][0];
+}
+const int Mesh::next_neighbor_index(const int vertIndex)
+{
+    return faces[vertsNextFace[vertIndex]][1];
+}
 const Eigen::Vector2d Mesh::prev_neighbor(const int vertIndex)
 {
     return verts[faces[vertsPrevFace[vertIndex]][0]];
@@ -127,6 +135,20 @@ const Eigen::Vector2d Mesh::calc_vertex_normal(const int vertIndex){
     n.normalize();
     return n;
 }
+const Eigen::Vector2d Mesh::calc_vertex_tangent(const int vertIndex){
+    Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
+
+    Eigen::Vector2d t_a = calc_face_tangent(adjacent_face_inds[0]);
+    Eigen::Vector2d t_b = calc_face_tangent(adjacent_face_inds[1]);
+    
+    double d_a = face_length(adjacent_face_inds[0]);
+    double d_b = face_length(adjacent_face_inds[1]);
+
+    Eigen::Vector2d t = (d_a*t_a + d_b*t_b)/(d_a+d_b);
+    t.normalize();
+    return t;
+}
+
 const Eigen::Vector2d Mesh::calc_face_normal(const int faceIndex){
     Eigen::Vector2i endpts = verts_from_face(faceIndex);
     Eigen::Vector2d x_s = verts[endpts[0]];
@@ -154,7 +176,7 @@ double Mesh::solid_angle(const int vertIndex){
     Eigen::Vector2d t_next = next_neighbor(vertIndex) - verts[vertIndex];
 
     double theta = M_PI - turning_angle(t_prev,t_next);
-    return theta/(2*M_PI);
+    return theta; ///(2*M_PI);
 }
 double Mesh::signed_mean_curvature(const int vertIndex){
     Eigen::Vector2d t_prev = verts[vertIndex] - prev_neighbor(vertIndex);

@@ -18,6 +18,8 @@ class Mesh
 
         const Eigen::Vector2i verts_from_face(const int faceIndex);
         const Eigen::Vector2i faces_from_vert(const int vertIndex);
+        const int prev_neighbor_index(const int vertIndex);
+        const int next_neighbor_index(const int vertIndex);
         const Eigen::Vector2d prev_neighbor(const int vertIndex);
         const Eigen::Vector2d next_neighbor(const int vertIndex);
 
@@ -26,6 +28,7 @@ class Mesh
         double vert_area(const int vertIndex);
 
         const Eigen::Vector2d calc_vertex_normal(const int vertIndex);
+        const Eigen::Vector2d calc_vertex_tangent(const int vertIndex);
         const Eigen::Vector2d calc_face_normal(const int faceIndex);    // outward normal
         const Eigen::Vector2d calc_face_tangent(const int faceIndex);   // clockwise tangent
 

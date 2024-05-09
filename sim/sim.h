@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <Eigen/Dense>
+#include <Eigen/IterativeLinearSolvers>
 #include "mesh.h"
 
 class Sim
@@ -18,13 +19,12 @@ class Sim
     private:
         int n;
         float dt;
-        Mesh m;
-        
-        float sigma, sigma_SL, sigma_SA;
-        float rho;
+        Mesh& m;
+
+        double sigma, sigma_SL, sigma_SA;
+        double rho;
         Eigen::Vector2d gravity;
         
-
         void step_advect();
         void step_HHD();
         void step_BEM();
@@ -32,6 +32,8 @@ class Sim
         void remesh();
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);
+        double M_1(double t);
+        double M_2(double t);
 
         double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
 
