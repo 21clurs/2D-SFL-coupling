@@ -3,9 +3,6 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-# let's open one file first
-# and just plot her!!
-
 outdir = "./sim/out/"
 frames = os.listdir(outdir)
 for i in range(len(frames)):
@@ -44,6 +41,7 @@ for i in range(len(frames)):
         ax = plt.gca()
         ax.set_xlim([-2, 2])
         ax.set_ylim([-2, 2])
+        ax.set_aspect('equal')
 
         #plt.show()
         plt.savefig('./outFrames/frame-'+str(i)+'.png')

@@ -15,6 +15,11 @@ class Sim
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
         void step_sim(int frame);
+        void step_advect();
+        void step_HHD();
+        void step_BEM();
+
+        std::vector<Eigen::Vector2d>& get_vels(){ return m.vels; }
         
     private:
         int n;
@@ -24,10 +29,6 @@ class Sim
         double sigma, sigma_SL, sigma_SA;
         double rho;
         Eigen::Vector2d gravity;
-        
-        void step_advect();
-        void step_HHD();
-        void step_BEM();
 
         void remesh();
 
