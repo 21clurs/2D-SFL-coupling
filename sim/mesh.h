@@ -6,6 +6,7 @@
 
 class Mesh
 {
+    friend class Sim;
     public:
         std::vector<Eigen::Vector2d> verts;
         std::vector<Eigen::Vector2i> faces;
@@ -37,9 +38,6 @@ class Mesh
 
         void laplacian_smoothing();
 
-        std::vector<bool> is_air;
-        std::vector<bool> is_solid;
-        std::vector<bool> is_triple;
 
         std::vector<bool> get_solid_faces();
     private:
@@ -47,6 +45,10 @@ class Mesh
         std::vector<int> vertsPrevFace;
         std::vector<int> vertsNextFace;
 
+        std::vector<bool> is_air;
+        std::vector<bool> is_solid;
+        std::vector<bool> is_triple;
+        
         void update_neighbor_face_vecs();
         double turning_angle(Eigen::Vector2d a, Eigen::Vector2d b);
 

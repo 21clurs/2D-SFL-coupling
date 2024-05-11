@@ -224,15 +224,27 @@ void Sim::step_HHD(){
 }
 
 void Sim::step_BEM(){
-    
-    // Setting BCs
     int N = m.verts.size();
-    double triple_junction_virtual_width = 0.25 * m.calc_avg_face_length();
-
     Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
     Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
+    step_BEM_BC(BC_p, BC_dpdn);
+    
+    Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
+    Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
+    step_BEM_solve(BC_p, BC_dpdn, p, dpdn);
+    
+    step_BEM_gradP(BC_p, BC_dpdn, p,dpdn);
+}
 
+void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
+    // Setting BCs
+    int N = m.verts.size();
     std::vector<bool> face_is_solid = m.get_solid_faces();
+
+    double triple_junction_virtual_width = 0.25 * m.calc_avg_face_length();
+
+    //Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
+    //Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
 
     Eigen::Vector2d v_solid =  Eigen::Vector2d({0.0, 0.0}); //placeholder
 
@@ -294,13 +306,16 @@ void Sim::step_BEM(){
 
     assert(BC_p == BC_p);
     assert(BC_dpdn == BC_dpdn);
-
-    
+        
     //std::cout<<"BC_p: "<<BC_p<<std::endl;
     //std::cout<<"BC_dpdn: "<<BC_dpdn<<std::endl;
-    
+}
 
+void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn){
     // BEM
+    int N = m.verts.size();
+    std::vector<bool> face_is_solid = m.get_solid_faces();
+
     Eigen::MatrixXd collocA_solid = Eigen::MatrixXd::Zero(N, N);
     Eigen::MatrixXd collocA_air = Eigen::MatrixXd::Zero(N, N);
     Eigen::MatrixXd collocB_solid = Eigen::MatrixXd::Zero(N, N);
@@ -478,25 +493,39 @@ void Sim::step_BEM(){
     */
 
     // assembly
-    Eigen::VectorXd p = BC_p;
-    Eigen::VectorXd dpdn = BC_dpdn;
+    //Eigen::VectorXd p = BC_p;
+    //Eigen::VectorXd dpdn = BC_dpdn;
     for (size_t i=0; i<N; i++){
-        if(m.is_air[i])
+        if(m.is_air[i]){
+            p[i] = BC_p[i];
             dpdn[i] = soln[i];
-        else if(m.is_solid[i])
+        }
+        else if(m.is_solid[i]){
             p[i] = soln[i];
-        else if(m.is_triple[i])
+            dpdn[i] = BC_p[i];
+        }
+        else if(m.is_triple[i]){
+            p[i] = BC_p[i];
             dpdn[i] = soln[i]; // technically only dpdn_a component of dpdn, but we store it all together
+        }
         else
             throw std::logic_error("This should not have been reached-- all vertices should be categorized as air, solid, or triple");
     }
+
+    assert(p == p);
+    assert(dpdn == dpdn);
     
     /*
     std::cout<<"p: "<<p<<std::endl;
     std::cout<<"dpdn: "<<dpdn<<std::endl;
     */
+}
 
+void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn){
     // gradP and update velocities
+    int N = m.verts.size();
+    std::vector<bool> face_is_solid = m.get_solid_faces();
+
     std::vector<Eigen::Vector2d> dv = std::vector<Eigen::Vector2d>(N,Eigen::Vector2d(0.0,0.0));
     // linearly interpolate p from vertices to get dpdt per face
     Eigen::VectorXd dpdt_face(N);
