@@ -1,15 +1,15 @@
 #include "generateshapes.h"
 void GenerateShape::circle(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
-  float theta = 2*M_PI/n;
-  
-  double r=1;
-  Eigen::Vector2d center(0.0,0.0);
+    float theta = 2*M_PI/n;
+    
+    double r=1;
+    Eigen::Vector2d center(0.0,0.0);
 
-  for (uint i=0; i<n; i++){
-      verts[i](0) = r*cos(theta*i) + center(0);
-      verts[i](1) = r*sin(theta*i) + center(1);
+    for (uint i=0; i<n; i++){
+        verts[i](0) = r*cos(theta*i) + center(0);
+        verts[i](1) = r*sin(theta*i) + center(1);
 
-      faces[i] = Eigen::Vector2i(i,(i+1)%n);
+        faces[i] = Eigen::Vector2i(i,(i+1)%n);
   }
 }
 void GenerateShape::square(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
@@ -102,4 +102,29 @@ void GenerateShape::semicircle_v(int n, std::vector<Eigen::Vector2d>& verts, std
         verts[i+n/2](1) = r - delta*i;
     }
 
+}
+void GenerateShape::donut(int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
+    double ratio = 2.0;
+    int n_inner = n/(ratio+1);
+    int n_outer = n-n_inner;
+
+    Eigen::Vector2d center(0.0,0.0);
+
+    float theta_inner = 2*M_PI/n_inner;
+    double r_inner = 0.5;
+    for (uint i=0; i<n_inner; i++){
+        verts[i](0) = r_inner*cos(theta_inner*i) + center(0);
+        verts[i](1) = r_inner*sin(theta_inner*i) + center(1);
+
+        faces[i] = Eigen::Vector2i((i+1)%n_inner,i);
+    }
+
+    float theta_outer = 2*M_PI/n_outer;
+    double r_outer=r_inner*ratio;
+    for (uint i=0; i<n_outer; i++){
+        verts[n_inner+i](0) = r_outer*cos(theta_outer*i) + center(0);
+        verts[n_inner+i](1) = r_outer*sin(theta_outer*i) + center(1);
+
+        faces[n_inner+i] = Eigen::Vector2i(n_inner+i,n_inner+(i+1)%n_outer);
+    }
 }

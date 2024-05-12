@@ -37,6 +37,17 @@ void Mesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::v
     is_triple = triple;
 }
 
+void Mesh::update_face_orientations_from_norms(const std::vector<Eigen::Vector2d>& face_normals){
+    assert(face_normals.size() == faces.size());
+    for (size_t i=0; i<faces.size(); i++){
+        if (calc_face_normal(i).dot(face_normals[i]) > 0)
+            swap_face_vertices(i);
+        assert(calc_face_normal(i).dot(face_normals[i]) <= 0);
+    }
+
+    update_neighbor_face_vecs();
+}
+
 // returns the indices of the vertices at the endpts of the given face
 const Eigen::Vector2i Mesh::verts_from_face(const int faceIndex)
 {
@@ -95,18 +106,6 @@ std::vector<bool> Mesh::get_solid_faces(){
     return solid_faces;
 }
 
-void Mesh::update_neighbor_face_vecs()
-{
-    int s_index,t_index;
-    for (size_t i=0; i<faces.size(); i++){
-        s_index = faces[i][0];
-        t_index = faces[i][1];
-
-        vertsPrevFace[t_index] = i;
-        vertsNextFace[s_index] = i;
-    }
-}
-
 double Mesh::face_length(const int faceIndex){
     Eigen::Vector2i endpts = verts_from_face(faceIndex);
     return (verts[endpts[0]]-verts[endpts[1]]).norm();
@@ -136,6 +135,7 @@ const Eigen::Vector2d Mesh::calc_vertex_normal(const int vertIndex){
     return n;
 }
 const Eigen::Vector2d Mesh::calc_vertex_tangent(const int vertIndex){
+    
     Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
 
     Eigen::Vector2d t_a = calc_face_tangent(adjacent_face_inds[0]);
@@ -184,6 +184,21 @@ double Mesh::signed_mean_curvature(const int vertIndex){
 
     double phi = turning_angle(t_prev, t_next);
     return 2*phi/(t_prev.norm() + t_next.norm());
+}
+void Mesh::update_neighbor_face_vecs(){
+    int s_index,t_index;
+    for (size_t i=0; i<faces.size(); i++){
+        s_index = faces[i][0];
+        t_index = faces[i][1];
+
+        vertsPrevFace[t_index] = i;
+        vertsNextFace[s_index] = i;
+    }
+}
+void Mesh::swap_face_vertices(const int faceIndex){
+    int tmp = faces[faceIndex][0];
+    faces[faceIndex][0] = faces[faceIndex][1];
+    faces[faceIndex][1] = tmp;
 }
 double Mesh::turning_angle(Eigen::Vector2d a, Eigen::Vector2d b){
     a.normalize();
