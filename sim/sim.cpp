@@ -34,6 +34,11 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         file<<"vn "<<(m.calc_vertex_normal(i))[0]<<" "<<(m.calc_vertex_normal(i))[1]<<std::endl;
     file<<std::endl;
     
+    // vertex tangents -- should be oriented as 90deg anticlockwise rotation from the outward norms
+    for (uint i=0; i<m.faces.size(); i++)
+        file<<"vt "<<(m.calc_vertex_tangent(i))[0]<<" "<<(m.calc_vertex_tangent(i))[1]<<std::endl;
+    file<<std::endl;
+
     // faces
     for (uint i=0; i<m.faces.size(); i++)
         file<<"f "<<m.faces[i][0]<<" "<<m.faces[i][1]<<std::endl;
