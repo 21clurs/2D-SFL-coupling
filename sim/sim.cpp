@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream> 
 #include <stdexcept>
-#include "generateshapes.h"
 #include "boundaryintegral.h"
 
 using Eigen::MatrixXd;
@@ -76,7 +75,7 @@ void Sim::step_HHD(){
     const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
     const std::vector<Eigen::Vector2d> quadrature_DE = BoundaryIntegral::tanh_sinh_quadrature();
 
-    const double negOneOver2pi = -1.0/(2*M_PI);
+    const double negOneOver2pi = -1.0/(2.0*M_PI);
 
     std::vector<double> dPhidn(n, 0.0);
     std::vector<double> curlA(n, 0.0);
@@ -359,7 +358,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                 G_quad_prev = (d_prev/2.0) * (log(d_prev)-3.0/2.0) * negOneOver2pi;
                 dGdn_quad_prev = 0; // placeholder, we deal with this later w/row-sum
                 G_quad_next = (d_next/2.0) * (log(d_next)-3.0/2.0) * negOneOver2pi;
-                dGdn_quad_next = 0;
+                dGdn_quad_next = 0; // placeholder, we deal with this later w/row-sum
             } else{
                 if (j==prev_i){
                     G_quad_prev = (d_prev/2.0) * (log(d_prev)-1.0/2.0) * negOneOver2pi;
@@ -450,12 +449,6 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             }
         }
     }
-    /*
-    std::cout<<"collocA_air: "<<collocA_air<<std::endl;
-    std::cout<<"collocA_solid: "<<collocA_solid<<std::endl;
-    std::cout<<"collocB_air: "<<collocB_air<<std::endl;
-    std::cout<<"collocB_solid: "<<collocB_solid<<std::endl;
-    */
     Eigen::MatrixXd collocA = collocA_solid + collocA_air;
 
     // row-sum
@@ -463,6 +456,14 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         double omega_i = m.solid_angle(i) * negOneOver2pi;
         collocA(i,i) = omega_i - collocA.row(i).sum(); 
     }
+
+    /*
+    if (N==8){
+        std::cout<<"collocA: "<<collocA<<std::endl;
+        std::cout<<"collocB_air: "<<collocB_air<<std::endl;
+        std::cout<<"collocB_solid: "<<collocB_solid<<std::endl;
+    }
+    */
 
     // re-arranging
     for (size_t i=0; i<N; i++){
@@ -491,10 +492,12 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     soln = solver.solve(rhs);
     
     /*
-    std::cout<<"A: "<<A<<std::endl;
-    std::cout<<"rhs: "<<rhs<<std::endl;
-    std::cout<<"rhs_per_vertex: "<<rhs_per_vertex<<std::endl;
-    std::cout<<"x: "<<soln<<std::endl;
+    if (N==8){
+        std::cout<<"A: "<<A<<std::endl;
+        std::cout<<"rhs: "<<rhs<<std::endl;
+        std::cout<<"rhs_per_vertex: "<<rhs_per_vertex<<std::endl;
+        std::cout<<"x: "<<soln<<std::endl;
+    }
     */
 
     // assembly
