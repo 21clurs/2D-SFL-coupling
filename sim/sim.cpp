@@ -320,6 +320,18 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     int N = m.verts.size();
     std::vector<bool> face_is_solid = m.get_solid_faces();
 
+    /*
+    std::cout<<"x:";
+    for (size_t i=0; i<N; i++){
+        std::cout<<m.verts[i]<<std::endl;
+        std::cout<<"Solid: "<<m.is_solid[i]<<", Air: "<<m.is_air[i]<<", Triple: "<<m.is_triple[i]<<std::endl;
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"p_input"<<BC_p<<std::endl;
+    std::cout<<"dpdn_input"<<BC_dpdn<<std::endl;
+    */
+
     Eigen::MatrixXd collocA_solid = Eigen::MatrixXd::Zero(N, N);
     Eigen::MatrixXd collocA_air = Eigen::MatrixXd::Zero(N, N);
     Eigen::MatrixXd collocB_solid = Eigen::MatrixXd::Zero(N, N);
@@ -458,11 +470,9 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     }
 
     /*
-    if (N==8){
-        std::cout<<"collocA: "<<collocA<<std::endl;
-        std::cout<<"collocB_air: "<<collocB_air<<std::endl;
-        std::cout<<"collocB_solid: "<<collocB_solid<<std::endl;
-    }
+    std::cout<<"collocA: "<<collocA<<std::endl;
+    std::cout<<"collocB_air: "<<collocB_air<<std::endl;
+    std::cout<<"collocB_solid: "<<collocB_solid<<std::endl;
     */
 
     // re-arranging
@@ -492,12 +502,10 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     soln = solver.solve(rhs);
     
     /*
-    if (N==8){
-        std::cout<<"A: "<<A<<std::endl;
-        std::cout<<"rhs: "<<rhs<<std::endl;
-        std::cout<<"rhs_per_vertex: "<<rhs_per_vertex<<std::endl;
-        std::cout<<"x: "<<soln<<std::endl;
-    }
+    std::cout<<"A: "<<A<<std::endl;
+    std::cout<<"rhs: "<<rhs<<std::endl;
+    std::cout<<"rhs_per_vertex: "<<rhs_per_vertex<<std::endl;
+    std::cout<<"x: "<<soln<<std::endl;
     */
 
     // assembly
@@ -522,7 +530,6 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 
     assert(p == p);
     assert(dpdn == dpdn);
-    
     /*
     std::cout<<"p: "<<p<<std::endl;
     std::cout<<"dpdn: "<<dpdn<<std::endl;

@@ -95,7 +95,7 @@ void TestingHelpers::testHHD(std::string shape, std::string fieldType, int n, Ei
 }
 
 void TestingHelpers::testBEMErrorTables(std::string shape, std::string fieldType){
-    std::vector<size_t> N = {8, 16, 32, 64, 128, 256, 512};
+    std::vector<size_t> N = {8, 16, 32, 64, 128, 256, 512, 1024};
     std::vector<std::vector<Eigen::Vector2d>> errs(N.size(), std::vector<Eigen::Vector2d>(3,Eigen::Vector2d::Zero()));
     for (size_t i=0; i<N.size(); i++){
         testBEM(shape, fieldType, N[i], errs[i]);
@@ -171,28 +171,71 @@ void TestingHelpers::testBEM(std::string shape, std::string fieldType, int n, st
     Eigen::VectorXd dpdn_input = Eigen::VectorXd::Zero(n);
     Eigen::VectorXd p_expected(n);
     Eigen::VectorXd dpdn_expected(n);
+    std::vector<bool> face_is_solid = mesh.get_solid_faces();
     for( size_t i=0; i<n; i++){
         if (fieldType.compare("1") == 0){
             // p = y
             p_expected[i] = mesh.verts[i].y();
-            dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(0.0,1.0));
+            if (is_triple[i]){
+                for (int face: mesh.faces_from_vert(i)){
+                    if (!face_is_solid[face]){
+                        dpdn_expected[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(0.0,1.0));
+                    } else{
+                        dpdn_input[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(0.0,1.0));
+                    }
+                }
+            } else {
+                dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(0.0,1.0));
+            }
         } else if (fieldType.compare("2") == 0){
             // p = x+y
             p_expected[i] = mesh.verts[i].x() + mesh.verts[i].y();
-            dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(1.0,1.0));
+            if (is_triple[i]){
+                for (int face: mesh.faces_from_vert(i)){
+                    if (!face_is_solid[face]){
+                        dpdn_expected[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(1.0,1.0));
+                    } else{
+                        dpdn_input[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(1.0,1.0));
+                    }
+                }
+            } else {
+                dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(1.0,1.0));
+            }
         } else if (fieldType.compare("3") == 0){
             // p = y^3-3yx^2
-            p_expected[i] = pow(mesh.verts[i].y(),3) -  mesh.verts[i].y() * pow(mesh.verts[i].x(),2);
-            dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(-6.0*mesh.verts[i].x()*mesh.verts[i].y(), 3.0*pow(mesh.verts[i].y(),2)-3.0*pow(mesh.verts[i].x(),2)));
+            p_expected[i] = pow(mesh.verts[i].y(),3) -  3 * mesh.verts[i].y() * pow(mesh.verts[i].x(),2);
+            if (is_triple[i]){
+                for (int face: mesh.faces_from_vert(i)){
+                    if (!face_is_solid[face]){
+                        dpdn_expected[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(-6.0*mesh.verts[i].x()*mesh.verts[i].y(), 3.0*pow(mesh.verts[i].y(),2)-3.0*pow(mesh.verts[i].x(),2)));
+                    } else{
+                        dpdn_input[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(-6.0*mesh.verts[i].x()*mesh.verts[i].y(), 3.0*pow(mesh.verts[i].y(),2)-3.0*pow(mesh.verts[i].x(),2)));
+                    }
+                }
+            } else {
+                dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(-6.0*mesh.verts[i].x()*mesh.verts[i].y(), 3.0*pow(mesh.verts[i].y(),2)-3.0*pow(mesh.verts[i].x(),2)));
+            }
         } else if (fieldType.compare("4") == 0){
             // p = x^3-3xy^2
-            p_expected[i] = pow(mesh.verts[i].x(),3) -  mesh.verts[i].x() * pow(mesh.verts[i].y(),2);
-            dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(3.0*pow(mesh.verts[i].x(),2)-3.0*pow(mesh.verts[i].y(),2), -6.0*mesh.verts[i].x()*mesh.verts[i].y()));
+            p_expected[i] = pow(mesh.verts[i].x(),3) -  3 * mesh.verts[i].x() * pow(mesh.verts[i].y(),2);
+            if (is_triple[i]){
+                for (int face: mesh.faces_from_vert(i)){
+                    if (!face_is_solid[face]){
+                        dpdn_expected[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(3.0*pow(mesh.verts[i].x(),2)-3.0*pow(mesh.verts[i].y(),2), -6.0*mesh.verts[i].x()*mesh.verts[i].y()));
+                    } else{
+                        dpdn_input[i] = mesh.calc_face_normal(face).dot(Eigen::Vector2d(3.0*pow(mesh.verts[i].x(),2)-3.0*pow(mesh.verts[i].y(),2), -6.0*mesh.verts[i].x()*mesh.verts[i].y()));
+                    }
+                }
+            } else {
+                dpdn_expected[i] = mesh.calc_vertex_normal(i).dot(Eigen::Vector2d(3.0*pow(mesh.verts[i].x(),2)-3.0*pow(mesh.verts[i].y(),2), -6.0*mesh.verts[i].x()*mesh.verts[i].y()));
+            }
         }
 
         if (is_solid[i]){
             dpdn_input[i] = dpdn_expected[i];
         } else if (is_air[i]){
+            p_input[i] = p_expected[i];
+        } else if (is_triple[i]){
             p_input[i] = p_expected[i];
         }
     }
