@@ -45,7 +45,7 @@ int main(){
   std::cout << std::endl;
   */
 
-  TestingHelpers::testErrorTables("BEM","donut","1");
+  TestingHelpers::testBEMErrorTables("donut","1");
 
   return 0;
 }

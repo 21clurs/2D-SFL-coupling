@@ -5,7 +5,7 @@ import os
 
 outdir = "./sim/out/"
 frames = os.listdir(outdir)
-for frame in range(len(frames)):
+for frame in range(30):
 
     vList = []  # vertices
     fList = []  # faces
