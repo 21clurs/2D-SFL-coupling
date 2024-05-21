@@ -5,6 +5,7 @@ Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen
     faces(in_faces)
 {
     vels = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
+    vels_solid = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
 
     vertsPrevFace = std::vector<int>(verts.size(),0);
     vertsNextFace = std::vector<int>(verts.size(),0);
@@ -21,6 +22,8 @@ Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen
     faces(in_faces),
     vels(in_vels)
 {
+    vels_solid = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
+
     vertsPrevFace = std::vector<int>(verts.size(),0);
     vertsNextFace = std::vector<int>(verts.size(),0);
     update_neighbor_face_vecs();
@@ -195,6 +198,15 @@ void Mesh::update_neighbor_face_vecs(){
         vertsNextFace[s_index] = i;
     }
 }
+void Mesh::update_triple_points(){
+    for(size_t i=0; i<verts.size(); i++){
+        if (is_solid[i] && (is_air[next_neighbor_index(i)] || is_air[prev_neighbor_index(i)])){
+            is_triple[i] = true;
+            is_solid[i] = false;
+        }
+        assert((is_solid[i] ^ is_air[i] ^ is_triple[i]) && (is_solid[i] + is_air[i] + is_triple[i]==1));
+    }
+}
 void Mesh::swap_face_vertices(const int faceIndex){
     int tmp = faces[faceIndex][0];
     faces[faceIndex][0] = faces[faceIndex][1];
@@ -208,4 +220,20 @@ double Mesh::turning_angle(Eigen::Vector2d a, Eigen::Vector2d b){
     double dotprod = a[0]*b[0] + a[1]*b[1];
 
     return atan2(crossprod,dotprod);
+}
+void Mesh::collide_with_wall(WallObject w){
+    for(size_t i=0; i<verts.size(); i++){
+        //std::cout<<"og: "<<verts[i]<<std::endl;
+        if(w.checkCollisionAndSnap(verts[i]) == true){
+
+            //std::cout<<"snapped: "<<verts[i]<<std::endl;
+            vels_solid[i] = w.calcEffectiveVel();
+            
+            is_solid[i] = true; 
+            is_air[i] = false;
+            is_triple[i] = false;
+            //std::cout<<"bLAH "<<i<<std::endl;
+        }
+    }
+    update_triple_points();
 }

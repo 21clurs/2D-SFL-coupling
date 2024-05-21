@@ -286,7 +286,7 @@ void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vecto
         assert(((void)"n is a multiple of 4 when generating a square", n%4==0));
         
         int nPerSide = n/4;
-        float sideLength = 1;
+        float sideLength = 2;
         float delta = sideLength/nPerSide;
 
         for(size_t i=0; i<nPerSide; i++){

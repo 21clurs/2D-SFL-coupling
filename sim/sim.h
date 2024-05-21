@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 #include "mesh.h"
+#include "wallobject.h"
 
 class Sim
 {
@@ -12,16 +13,20 @@ class Sim
     public:
 
         Sim(Mesh& m, int n, float dt); 
+        
+        void addWall(WallObject* wall);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
-        void step_sim(int frame);
-        void step_advect();
+        void step_sim(double curr_t);
+        void step_advect(double t);
         void step_HHD();
+        void step_gravity();
         void step_BEM();
         
         std::vector<Eigen::Vector2d>& get_vels(){ return m.vels; }
         
+        void collide();
     private:
         int n;
         float dt;
@@ -30,6 +35,8 @@ class Sim
         double sigma, sigma_SL, sigma_SA;
         double rho;
         Eigen::Vector2d gravity;
+
+        std::vector<WallObject*> walls;
 
         void remesh();
 

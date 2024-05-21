@@ -2,7 +2,7 @@ CXX = g++ ${CXXFLAGS}
 CXXFLAGS = -std=c++11 -lpthread -I/usr/local/include/eigen3 -Wall
 EXEC = sim.out
 
-FILES = main.cpp mesh.cpp testinghelpers.cpp sim.cpp boundaryintegral.cpp
+FILES = main.cpp mesh.cpp testinghelpers.cpp sim.cpp boundaryintegral.cpp wallobject.cpp
 
 all:
 	${CXX} ${FILES} -o ${EXEC}

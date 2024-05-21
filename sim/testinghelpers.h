@@ -1,5 +1,5 @@
-#ifndef GENERATE_FIELDS
-#define GENERATE_FIELDS
+#ifndef TESTING_HELPERS_H
+#define TESTING_HELPERS_H
 
 #include <math.h>
 #include <vector>

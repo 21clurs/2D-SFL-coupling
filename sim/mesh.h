@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include <vector>
+#include "wallobject.h"
 
 class Mesh
 {
@@ -11,6 +12,7 @@ class Mesh
         std::vector<Eigen::Vector2d> verts;
         std::vector<Eigen::Vector2i> faces;     // assuming these are organized in some orientation [prev vertex, next vertex]
         std::vector<Eigen::Vector2d> vels;
+        std::vector<Eigen::Vector2d> vels_solid;
 
         // constructors
         Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
@@ -38,10 +40,12 @@ class Mesh
         double signed_mean_curvature(const int vertIndex);
         double solid_angle(const int vertIndex);
 
+        std::vector<bool> get_solid_faces();
+
         void laplacian_smoothing();
 
+        void collide_with_wall(WallObject w);
 
-        std::vector<bool> get_solid_faces();
     private:
         // these are populated once at construction
         std::vector<int> vertsPrevFace;
@@ -52,6 +56,9 @@ class Mesh
         std::vector<bool> is_triple;
 
         void update_neighbor_face_vecs();
+
+        void update_triple_points();
+
         void swap_face_vertices(const int faceIndex);
 
         double turning_angle(Eigen::Vector2d a, Eigen::Vector2d b);

@@ -15,49 +15,94 @@ Sim::Sim(Mesh& m, int n, float dt):
     m(m),
     sigma(0.5),
     sigma_SL(1.0),
-    sigma_SA(1.0),
+    sigma_SA(1.5),
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -1.0}))
 {
 }
 
+void Sim::addWall(WallObject* wall){
+    walls.emplace_back(wall);
+}
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
     std::ofstream file(filelocation+filename);
-    for (uint i=0; i<m.verts.size(); i++)
+    for (size_t i=0; i<m.verts.size(); i++)
         file<<"v "<<m.verts[i][0]<<" "<<m.verts[i][1]<<std::endl;
     file<<std::endl;
 
     // outward vertex norms
-    for (uint i=0; i<m.verts.size(); i++)
+    for (size_t i=0; i<m.verts.size(); i++)
         file<<"vn "<<(m.calc_vertex_normal(i))[0]<<" "<<(m.calc_vertex_normal(i))[1]<<std::endl;
     file<<std::endl;
     
     // vertex tangents -- should be oriented as 90deg anticlockwise rotation from the outward norms
-    for (uint i=0; i<m.faces.size(); i++)
+    for (size_t i=0; i<m.faces.size(); i++)
         file<<"vt "<<(m.calc_vertex_tangent(i))[0]<<" "<<(m.calc_vertex_tangent(i))[1]<<std::endl;
     file<<std::endl;
 
     // faces
-    for (uint i=0; i<m.faces.size(); i++)
+    for (size_t i=0; i<m.faces.size(); i++)
         file<<"f "<<m.faces[i][0]<<" "<<m.faces[i][1]<<std::endl;
+    file<<std::endl;
+
+    // walls
+    for (size_t i=0; i<walls.size(); i++){
+        // wall verts
+        file<<"v "<<walls[i]->endptA[0]<<" "<<walls[i]->endptA[1]<<std::endl;
+        file<<"v "<<walls[i]->endptB[0]<<" "<<walls[i]->endptB[1]<<std::endl;
+
+        // wall faces -- a little hacky but functional for now
+        file<<"f "<<m.faces.size()+2*i<<" "<<m.faces.size()+2*i+1<<std::endl; 
+    }
     file.close();
 
     return true;
 }
 
-void Sim::step_sim(int frame){
-    step_advect();
-    remesh();
-    /*std::cout<<"post remesh vec"<<std::endl;
+void Sim::step_sim(double curr_t){
+    /*std::cout<<"pre remesh vec"<<std::endl;
     for (size_t i=0; i<m.verts.size(); i++){
         std::cout<<m.verts[i][0]<<", "<<m.verts[i][1]<<std::endl;
     }*/
+    /*
+    std::cout<<"is_air: ";
+    for (size_t i=0; i<m.verts.size(); i++){
+        std::cout<<m.is_air[i]<<", ";
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"is_solid: ";
+    for (size_t i=0; i<m.verts.size(); i++){
+        std::cout<<m.is_solid[i]<<", ";
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"is_triple: ";
+    for (size_t i=0; i<m.verts.size(); i++){
+        std::cout<<m.is_triple[i]<<", ";
+    }
+    std::cout<<std::endl;*/
+    step_advect(curr_t);
+    remesh();
+    /*std::cout<<"post remesh vec"<<std::endl;
+    for (size_t i=0; i<m.verts.size(); i++){
+        std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
+    }
+    std::cout<<std::endl;*/
+    collide();
+    /*std::cout<<"post collide vec"<<std::endl;
+    for (size_t i=0; i<m.verts.size(); i++){
+        std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
+    }
+    std::cout<<std::endl;*/
     step_HHD();
     /*std::cout<<"post HHD vels"<<std::endl;
     for (size_t i=0; i<m.vels.size(); i++){
         std::cout<<m.vels[i][0]<<", "<<m.vels[i][1]<<std::endl;
     }*/
+    step_gravity();
+
     step_BEM();
     /*std::cout<<"post BEM vels"<<std::endl;
     for (size_t i=0; i<m.vels.size(); i++){
@@ -65,9 +110,12 @@ void Sim::step_sim(int frame){
     }*/
 }
 
-void Sim::step_advect(){
+void Sim::step_advect(double t){
     for (size_t i=0; i<n; i++){
         m.verts[i] = m.verts[i] + m.vels[i]*dt;
+    }
+    for (size_t i=0; i<walls.size(); i++){
+        walls[i]->advectFE(t);
     }
 }
 
@@ -227,6 +275,12 @@ void Sim::step_HHD(){
     }
 }
 
+void Sim::step_gravity(){
+    for (size_t i=0; i<n; i++){
+        m.vels[i] += gravity*dt;
+    }
+}
+
 void Sim::step_BEM(){
     int N = m.verts.size();
     Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
@@ -250,8 +304,6 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
     //Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
     //Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
 
-    Eigen::Vector2d v_solid =  Eigen::Vector2d({0.0, 0.0}); //placeholder
-
     for (size_t i=0; i<N; i++){
         Eigen::Vector2i incident_faces = m.faces_from_vert(i);
         // 'air' vertex: if it is explicitly air vertex or neither incident face is a solid face
@@ -266,7 +318,7 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             Eigen::Vector2d n_i = m.calc_vertex_normal(i);
 
             BC_p[i] = 0;
-            BC_dpdn[i] = n_i.dot(m.vels[i] + gravity*dt - v_solid) * rho;
+            BC_dpdn[i] = n_i.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho;
         }
         // triple junction
         else{
@@ -295,18 +347,27 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             t_solid_outward.normalize();
             Eigen::Vector2d t_air_outward = m.verts[i] - m.verts[air_vert];
             t_air_outward.normalize();
-
+            /*
+            std::cout<<"t_solid_outward at "<<i<<": "<<t_solid_outward<<std::endl;
+            std::cout<<"t_air_outward at "<<i<<": "<<t_air_outward<<std::endl;
+            */
             Eigen::Vector2d st_force_SL = -t_solid_outward * sigma * sigma_SL;
             Eigen::Vector2d st_force_SA = t_solid_outward * sigma * sigma_SA;
             Eigen::Vector2d st_force_LA = -t_air_outward * sigma;
 
             Eigen::Vector2d st_force_combined = st_force_SL + st_force_SA + st_force_LA;
+            /*
+            std::cout<<"st_force_combined: "<<st_force_combined<<std::endl;
+            std::cout<<"triple_junction_virtual_width: "<<triple_junction_virtual_width<<std::endl;
+            */
             double pressure_jump_normal_to_triple_junction = st_force_combined.dot(-t_solid_outward) / triple_junction_virtual_width;
 
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
-            BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - v_solid) * rho; // Note: technically, this is dpdn_a, not dpdn
+            BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_a, not dpdn
         }
     }
+
+    //std::cout<<"BC_p: "<<BC_p<<std::endl;
 
     assert(BC_p == BC_p);
     assert(BC_dpdn == BC_dpdn);
@@ -567,26 +628,35 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             Eigen::Vector2d n_S, n_A;
             Eigen::Vector2d t_SL, t_LA;
             if (face_is_solid[neighbor_faces[0]]){
-                t_SL = -m.calc_face_tangent(neighbor_faces[0]); //want it to face outward from vertex i
+                t_SL = m.calc_face_tangent(neighbor_faces[0]); //want it to face outward from vertex i
                 n_S = m.calc_face_normal(neighbor_faces[0]);
                 dpdt_SL = dpdt_face[neighbor_faces[0]];
                 //dpdn_S = BC_dpdn[i];
                 
-                t_LA = m.calc_face_tangent(neighbor_faces[1]);
+                t_LA = -m.calc_face_tangent(neighbor_faces[1]);
                 n_A = m.calc_face_normal(neighbor_faces[1]);
                 dpdt_LA = dpdt_face[neighbor_faces[1]];
                 //dpdn_A = dpdn[i];
             } else {
-                t_SL = m.calc_face_tangent(neighbor_faces[1]);
+                t_SL = -m.calc_face_tangent(neighbor_faces[1]);
                 n_S = m.calc_face_normal(neighbor_faces[1]);
                 dpdt_SL = dpdt_face[neighbor_faces[1]];
                 //dpdn_S = BC_dpdn[i];
 
-                t_LA = -m.calc_face_tangent(neighbor_faces[0]); //want it to face outward from vertex i
+                t_LA = m.calc_face_tangent(neighbor_faces[0]); //want it to face outward from vertex i
                 n_A = m.calc_face_normal(neighbor_faces[0]);
                 dpdt_LA = dpdt_face[neighbor_faces[0]];
                 //dpdn_A = dpdn[i];
             }
+            /*
+            std::cout<<"for vert "<<i<<":"<<std::endl;
+            std::cout<<"t_SL: "<<t_SL<<std::endl;
+            std::cout<<"n_S: "<<n_S<<std::endl;
+            std::cout<<"dpdt_SL: "<<dpdt_SL<<std::endl;
+            std::cout<<"t_LA: "<<t_LA<<std::endl;
+            std::cout<<"n_A: "<<n_A<<std::endl;
+            std::cout<<"dpdt_LA: "<<dpdt_LA<<std::endl;
+            */
             Eigen::MatrixXd gradp_proj = Eigen::MatrixXd::Zero(4, 2);
             Eigen::VectorXd gradp_proj_rhs = Eigen::VectorXd::Zero(4);
             gradp_proj.row(0) = n_S.transpose();        gradp_proj_rhs[0] = BC_dpdn[i];                 // dpdn on the solid side
@@ -596,9 +666,13 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             
             // TODO: look over this later
             Eigen::Vector2d gradp = (gradp_proj.transpose()*gradp_proj).partialPivLu().solve(gradp_proj.transpose()*gradp_proj_rhs); // stole this from 3D SFL
-            // project the pressure gradient to remove the solid normal component, because that component should be the prescribed BC_dpdn[i]
-            gradp = (Eigen::Matrix2d::Identity() - n_S * n_S.transpose()) * gradp + n_S * BC_dpdn[i];
-
+            // project the pressure gradient to remove the solid normal component, because that component should be the prescribed BC_dpdn[i]  
+            //gradp = (Eigen::Matrix2d::Identity() - n_S * n_S.transpose()) * gradp + n_S * BC_dpdn[i];
+            /*
+            std::cout<<"gradp_proj: "<<gradp_proj<<std::endl;
+            std::cout<<"gradp_proj_rhs: "<<gradp_proj_rhs<<std::endl;
+            std::cout<<"gradp: "<<gradp<<std::endl;
+            */
             dv[i] = -(1.0/rho) * gradp;
         }
     }
@@ -634,4 +708,16 @@ double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
 
 void Sim::remesh(){
     m.laplacian_smoothing();
+}
+
+void Sim::collide(){
+    // go through each wall in sim
+    // collide mesh with each wall
+        // go through mesh points, calling collide and snap
+        // if collide is true, set is_solid
+        // need to recalibrate triple points
+    for (size_t i=0; i<walls.size(); i++){
+        m.collide_with_wall(*walls[i]);
+    }
+
 }
