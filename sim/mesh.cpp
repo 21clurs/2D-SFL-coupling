@@ -111,7 +111,6 @@ const Eigen::Vector2d Mesh::calc_face_normal(const int faceIndex){
     return n;
 }
 const Eigen::Vector2d Mesh::calc_face_tangent(const int faceIndex){
-    // clockwise tangent?
     Eigen::Vector2i endpts = verts_from_face(faceIndex);
     Eigen::Vector2d x_s = verts[endpts[0]];
     Eigen::Vector2d x_t = verts[endpts[1]];
