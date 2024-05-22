@@ -13,9 +13,7 @@ class WallObject
         Eigen::Vector2d endptB;
         
         WallObject(double dt, Eigen::Vector2d& a, Eigen::Vector2d& b);
-        //WallObject(double dt, Eigen::Vector2d& a, Eigen::Vector2d& b, Eigen::Vector2d& v);
-
-        //void setVel(Eigen::Vector2d& v);
+        
         void setVelFunc(std::function<Eigen::Vector2d(double)> func);
         void setEps(double e);
         Eigen::Vector2d calcEffectiveVel();
@@ -30,7 +28,6 @@ class WallObject
         double dt;
         Eigen::Vector2d endptA_prev;
         Eigen::Vector2d endptB_prev;
-        //Eigen::Vector2d vel;
         Eigen::Vector2d n;
         Eigen::Vector2d endptA_effective;
         Eigen::Vector2d endptB_effective;

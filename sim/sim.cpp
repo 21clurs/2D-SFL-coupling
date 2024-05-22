@@ -15,7 +15,7 @@ Sim::Sim(Mesh& m, int n, float dt):
     m(m),
     sigma(0.5),
     sigma_SL(1.0),
-    sigma_SA(1.5),
+    sigma_SA(1.1),
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -1.0}))
 {
@@ -23,6 +23,10 @@ Sim::Sim(Mesh& m, int n, float dt):
 
 void Sim::addWall(WallObject* wall){
     walls.emplace_back(wall);
+}
+
+void Sim::addRect(RectMesh* rect){
+    rects.emplace_back(rect);
 }
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
@@ -55,7 +59,24 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         // wall faces -- a little hacky but functional for now
         file<<"f "<<m.faces.size()+2*i<<" "<<m.faces.size()+2*i+1<<std::endl; 
     }
+    file<<std::endl;
+    
+    // rectangles
+    for (size_t i=0; i<rects.size(); i++){
+        // rect verts
+        file<<"v "<<rects[i]->left_x<<" "<<rects[i]->bottom_y<<std::endl;
+        file<<"v "<<rects[i]->right_x<<" "<<rects[i]->bottom_y<<std::endl;
+        file<<"v "<<rects[i]->right_x<<" "<<rects[i]->top_y<<std::endl;
+        file<<"v "<<rects[i]->left_x<<" "<<rects[i]->top_y<<std::endl;
+
+        // rect faces -- a little hacky but functional for now
+        file<<"f "<<m.faces.size()+walls.size()*2+4*i<<" "<<m.faces.size()+walls.size()*2+4*i+1<<std::endl;
+        file<<"f "<<m.faces.size()+walls.size()*2+4*i+1<<" "<<m.faces.size()+walls.size()*2+4*i+2<<std::endl;
+        file<<"f "<<m.faces.size()+walls.size()*2+4*i+2<<" "<<m.faces.size()+walls.size()*2+4*i+3<<std::endl; 
+        file<<"f "<<m.faces.size()+walls.size()*2+4*i+3<<" "<<m.faces.size()+walls.size()*2+4*i<<std::endl;  
+    }
     file.close();
+    
 
     return true;
 }
@@ -720,4 +741,7 @@ void Sim::collide(){
         m.collide_with_wall(*walls[i]);
     }
 
+    for (size_t i=0; i<rects.size(); i++){
+        m.collide_with_rect(*rects[i]);
+    }
 }

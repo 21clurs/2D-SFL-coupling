@@ -6,17 +6,18 @@
 #include "sim.h"
 #include "mesh.h"
 #include "wallobject.h"
+#include "rectmesh.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector2i;
 
 int main(){
-  int n = 128;
+  int n = 60;
 
   std::vector<Vector2d> verts(n);
   std::vector<Vector2i> faces(n);
-  TestingHelpers::genShape("square",n,verts,faces);
+  TestingHelpers::genShape("square_donut",n,verts,faces);
   std::vector<Vector2d> vels(n);
   TestingHelpers::generateVField("zero",n,verts,vels);
   Mesh mesh(verts,faces,vels);
@@ -25,7 +26,7 @@ int main(){
     //std::cout << mesh.vels[i]<< std::endl;
   }
 
-  float dt = 1.0/240.0;
+  float dt = 1.0/60.0;
 
   Sim s(mesh, n, dt);
 
@@ -57,9 +58,14 @@ int main(){
   s.addWall(&w1);
   s.addWall(&w2);
   s.addWall(&w3);
+
+  // a little block in my cup
+  RectMesh r(-0.25, 0.25, -0.25, 0.25);
+  s.addRect(&r);
+
   s.collide(); // snap everything/set boundary flags properly, etc.
 
-  int num_frames = 800;
+  int num_frames = 240;
   for (int i=0; i<num_frames; i++){
     // sim stuff
     s.outputFrame(std::to_string(i)+".txt");

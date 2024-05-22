@@ -391,6 +391,48 @@ void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vecto
 
             faces[n_inner+i] = Eigen::Vector2i(n_inner+i,n_inner+(i+1)%n_outer);
         }
+    } else if (shape.compare("square_donut")==0){
+        double ratio = 4.0;
+        int n_inner = (n/(ratio+1));
+        int n_outer = n-n_inner;
+
+        assert(((void)"n_inner is a multiple of 4 when generating a square donut", n_inner%4==0));
+        
+        int nPerSide_inner = n_inner/4;
+        float sideLength_inner = 0.5;
+        float delta_inner = sideLength_inner/nPerSide_inner;
+
+        int nPerSide_outer = n_outer/4;
+        float sideLength_outer = sideLength_inner*ratio;
+        float delta_outer = sideLength_outer/nPerSide_outer;
+
+        // populate outer square
+        for(size_t i=0; i<nPerSide_outer; i++){
+            // bottom
+            verts[i] = Eigen::Vector2d((-sideLength_outer/2) + i*delta_outer, -sideLength_outer/2);
+            // right
+            verts[nPerSide_outer+i] = Eigen::Vector2d(sideLength_outer/2, (-sideLength_outer/2) + i*delta_outer);
+            // top
+            verts[2*nPerSide_outer+i] = Eigen::Vector2d((sideLength_outer/2)-i*delta_outer, sideLength_outer/2);
+            // left
+            verts[3*nPerSide_outer+i] = Eigen::Vector2d(-sideLength_outer/2, (sideLength_outer/2)-i*delta_outer);
+        }
+        for(size_t i=0; i<n_outer; i++)
+            faces[i] = Eigen::Vector2i(i,(i+1)%n_outer);
+
+        // populate inner square
+        for(size_t i=0; i<nPerSide_inner; i++){
+            // bottom
+            verts[n_outer + i] = Eigen::Vector2d((-sideLength_inner/2) + i*delta_inner, -sideLength_inner/2);
+            // right
+            verts[n_outer + nPerSide_inner+i] = Eigen::Vector2d(sideLength_inner/2, (-sideLength_inner/2) + i*delta_inner);
+            // top
+            verts[n_outer + 2*nPerSide_inner+i] = Eigen::Vector2d((sideLength_inner/2)-i*delta_inner, sideLength_inner/2);
+            // left
+            verts[n_outer + 3*nPerSide_inner+i] = Eigen::Vector2d(-sideLength_inner/2, (sideLength_inner/2)-i*delta_inner);
+        }
+        for(size_t i=0; i<n_inner; i++)
+            faces[n_outer + i] = Eigen::Vector2i(n_outer + (i+1)%n_inner, n_outer + i);
     } else {
         std::cout<<"please enter a valid shape type!"<<std::endl;
         return;

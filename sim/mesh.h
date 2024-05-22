@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include "wallobject.h"
+#include "rectmesh.h"
 
 class Mesh
 {
@@ -45,6 +46,7 @@ class Mesh
         void laplacian_smoothing();
 
         void collide_with_wall(WallObject w);
+        void collide_with_rect(RectMesh r);
 
     private:
         // these are populated once at construction

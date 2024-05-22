@@ -237,3 +237,19 @@ void Mesh::collide_with_wall(WallObject w){
     }
     update_triple_points();
 }
+void Mesh::collide_with_rect(RectMesh r){
+    for(size_t i=0; i<verts.size(); i++){
+        //std::cout<<"og: "<<verts[i]<<std::endl;
+        if(r.checkCollisionAndSnap(verts[i]) == true){
+
+            //std::cout<<"snapped: "<<verts[i]<<std::endl;
+            vels_solid[i] = Eigen::Vector2d(0,0);//placeholder
+            
+            is_solid[i] = true; 
+            is_air[i] = false;
+            is_triple[i] = false;
+            //std::cout<<"bLAH "<<i<<std::endl;
+        }
+    }
+    update_triple_points();
+}

@@ -6,6 +6,7 @@
 #include <Eigen/IterativeLinearSolvers>
 #include "mesh.h"
 #include "wallobject.h"
+#include "rectmesh.h"
 
 class Sim
 {
@@ -15,6 +16,7 @@ class Sim
         Sim(Mesh& m, int n, float dt); 
         
         void addWall(WallObject* wall);
+        void addRect(RectMesh* rect);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
@@ -37,6 +39,7 @@ class Sim
         Eigen::Vector2d gravity;
 
         std::vector<WallObject*> walls;
+        std::vector<RectMesh*> rects;
 
         void remesh();
 

@@ -5,7 +5,18 @@ import os
 
 outdir = "./sim/out/"
 frames = os.listdir(outdir)
-for frame in range(len(frames)):
+start = 0
+end = len(frames)
+
+if len(sys.argv)>1 and "-framerange" in sys.argv:
+    i = sys.argv.index("-framerange")
+    try:
+        start = int(sys.argv[i+1])
+        end = int(sys.argv[i+2])
+    except IndexError:
+        print("No valid range of frames entered. Retrieving all frames...")
+
+for frame in range(start, end):
 
     vList = []  # vertices
     fList = []  # faces
@@ -51,6 +62,7 @@ for frame in range(len(frames)):
             if "-showtangents" in sys.argv:
                 for i in range(len(vn)):
                     plt.arrow(v[i,0], v[i,1], vt[i,0]*0.2, vt[i,1]*0.2, head_width=.05, color="r")
+            
 
         # plt.show()
         plt.savefig('./outFrames/frame-'+str(frame)+'.png', format="png")
