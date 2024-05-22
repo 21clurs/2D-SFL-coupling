@@ -76,7 +76,7 @@ void TestingHelpers::testHHD(std::string shape, std::string fieldType, int n, Ei
     }
 
     // set up test simulation
-    Mesh mesh(verts,faces,vels);
+    LiquidMesh mesh(verts,faces,vels);
     float dt = 1.0/60.0;
     Sim s(mesh, n, dt);
     
@@ -161,7 +161,7 @@ void TestingHelpers::testBEM(std::string shape, std::string fieldType, int n, st
     }
 
     // set up test simulation
-    Mesh mesh(verts,faces);
+    LiquidMesh mesh(verts,faces);
     mesh.set_boundaries(is_air, is_solid, is_triple);
     float dt = 1.0/60.0;
     Sim s(mesh, n, dt);

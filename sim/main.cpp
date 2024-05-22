@@ -4,7 +4,7 @@
 
 #include "testinghelpers.h"
 #include "sim.h"
-#include "mesh.h"
+#include "liquidmesh.h"
 #include "wallobject.h"
 #include "rectmesh.h"
 
@@ -20,7 +20,7 @@ int main(){
   TestingHelpers::genShape("square_donut",n,verts,faces);
   std::vector<Vector2d> vels(n);
   TestingHelpers::generateVField("zero",n,verts,vels);
-  Mesh mesh(verts,faces,vels);
+  LiquidMesh mesh(verts,faces,vels);
   for (int i=0; i<n; i++){
     //std::cout << mesh.next_neighbor(i)<< std::endl;
     //std::cout << mesh.vels[i]<< std::endl;

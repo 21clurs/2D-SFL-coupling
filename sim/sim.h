@@ -4,7 +4,7 @@
 #include <math.h>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
-#include "mesh.h"
+#include "liquidmesh.h"
 #include "wallobject.h"
 #include "rectmesh.h"
 
@@ -13,7 +13,7 @@ class Sim
     friend class TestingHelpers;
     public:
 
-        Sim(Mesh& m, int n, float dt); 
+        Sim(LiquidMesh& m, int n, float dt); 
         
         void addWall(WallObject* wall);
         void addRect(RectMesh* rect);
@@ -32,7 +32,7 @@ class Sim
     private:
         int n;
         float dt;
-        Mesh& m;
+        LiquidMesh& m;
 
         double sigma, sigma_SL, sigma_SA;
         double rho;

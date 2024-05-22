@@ -9,13 +9,13 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector2i;
 
-Sim::Sim(Mesh& m, int n, float dt):
+Sim::Sim(LiquidMesh& m, int n, float dt):
     n(n),
     dt(dt),
     m(m),
     sigma(0.5),
-    sigma_SL(1.0),
-    sigma_SA(1.1),
+    sigma_SL(1.20),
+    sigma_SA(1.0),
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -1.0}))
 {

@@ -6,7 +6,7 @@
 #include <algorithm> 
 #include <Eigen/Dense>
 #include <iostream>
-#include "mesh.h"
+#include "liquidmesh.h"
 #include "sim.h"
 
 class TestingHelpers
