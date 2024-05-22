@@ -22,6 +22,8 @@ class Mesh
         Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
         Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces,  const std::vector<Eigen::Vector2d>& in_vels);
 
+        void update_face_orientations_from_norms(const std::vector<Eigen::Vector2d>& face_normals);
+
         const Eigen::Vector2i verts_from_face(const int faceIndex);
         const Eigen::Vector2i faces_from_vert(const int vertIndex);
         const int prev_neighbor_index(const int vertIndex);

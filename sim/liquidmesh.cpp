@@ -29,17 +29,6 @@ void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, 
     is_triple = triple;
 }
 
-void LiquidMesh::update_face_orientations_from_norms(const std::vector<Eigen::Vector2d>& face_normals){
-    assert(face_normals.size() == faces.size());
-    for (size_t i=0; i<faces.size(); i++){
-        if (calc_face_normal(i).dot(face_normals[i]) > 0)
-            swap_face_vertices(i);
-        assert(calc_face_normal(i).dot(face_normals[i]) <= 0);
-    }
-
-    update_neighbor_face_vecs();
-}
-
 void LiquidMesh::laplacian_smoothing()
 {
     std::vector<Eigen::Vector2d> C = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));

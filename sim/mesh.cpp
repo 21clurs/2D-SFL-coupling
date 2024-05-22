@@ -20,6 +20,15 @@ Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen
     update_neighbor_face_vecs();
 }   
 
+void Mesh::update_face_orientations_from_norms(const std::vector<Eigen::Vector2d>& face_normals){
+    assert(face_normals.size() == faces.size());
+    for (size_t i=0; i<faces.size(); i++){
+        if (calc_face_normal(i).dot(face_normals[i]) > 0)
+            swap_face_vertices(i);
+        assert(calc_face_normal(i).dot(face_normals[i]) <= 0);
+    }
+    update_neighbor_face_vecs();
+}
 
 // returns the indices of the vertices at the endpts of the given face
 const Eigen::Vector2i Mesh::verts_from_face(const int faceIndex)

@@ -19,7 +19,6 @@ class LiquidMesh : public Mesh
         LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
         
         void set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple);
-        void update_face_orientations_from_norms(const std::vector<Eigen::Vector2d>& face_normals);
 
         std::vector<bool> get_solid_faces();
 
