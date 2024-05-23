@@ -13,8 +13,9 @@ class SolidMesh : public Mesh
     public:
         // constructors
         SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : Mesh(in_verts, in_faces){}
+        SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : Mesh(in_verts, in_faces, in_vels){}
         void setEps(double e){ epsilon = e; }
-        bool checkCollisionAndSnap(Eigen::Vector2d& x);
+        bool checkCollisionAndSnap(Eigen::Vector2d& currpt);
 
     private:
         std::vector<Eigen::Vector2d> vert_normals;

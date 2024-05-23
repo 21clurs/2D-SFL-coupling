@@ -25,8 +25,8 @@ void Sim::addWall(WallObject* wall){
     walls.emplace_back(wall);
 }
 
-void Sim::addRect(RectMesh* rect){
-    rects.emplace_back(rect);
+void Sim::addSolid(SolidMesh* solid){
+    solids.emplace_back(solid);
 }
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
@@ -60,20 +60,17 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         file<<"f "<<m.faces.size()+2*i<<" "<<m.faces.size()+2*i+1<<std::endl; 
     }
     file<<std::endl;
-    
-    // rectangles
-    for (size_t i=0; i<rects.size(); i++){
-        // rect verts
-        file<<"v "<<rects[i]->left_x<<" "<<rects[i]->bottom_y<<std::endl;
-        file<<"v "<<rects[i]->right_x<<" "<<rects[i]->bottom_y<<std::endl;
-        file<<"v "<<rects[i]->right_x<<" "<<rects[i]->top_y<<std::endl;
-        file<<"v "<<rects[i]->left_x<<" "<<rects[i]->top_y<<std::endl;
 
-        // rect faces -- a little hacky but functional for now
-        file<<"f "<<m.faces.size()+walls.size()*2+4*i<<" "<<m.faces.size()+walls.size()*2+4*i+1<<std::endl;
-        file<<"f "<<m.faces.size()+walls.size()*2+4*i+1<<" "<<m.faces.size()+walls.size()*2+4*i+2<<std::endl;
-        file<<"f "<<m.faces.size()+walls.size()*2+4*i+2<<" "<<m.faces.size()+walls.size()*2+4*i+3<<std::endl; 
-        file<<"f "<<m.faces.size()+walls.size()*2+4*i+3<<" "<<m.faces.size()+walls.size()*2+4*i<<std::endl;  
+    // solids
+    for (size_t i=0; i<solids.size(); i++){
+        // solid verts
+        for (size_t j=0; j<solids[i]->verts.size(); j++){
+            file<<"v "<<solids[i]->verts[j][0]<<" "<<solids[i]->verts[j][1]<<std::endl;
+        }
+        // solid faces
+        for (size_t j=0; j<solids[i]->faces.size(); j++){
+            file<<"f "<< m.faces.size()+walls.size()*2+ solids[i]->faces[j][0]<<" "<< m.faces.size()+walls.size()*2+ solids[i]->faces[j][1]<<std::endl;
+        }
     }
     file.close();
     
@@ -740,8 +737,7 @@ void Sim::collide(){
     for (size_t i=0; i<walls.size(); i++){
         m.collide_with_wall(*walls[i]);
     }
-
-    for (size_t i=0; i<rects.size(); i++){
-        m.collide_with_rect(*rects[i]);
+    for (size_t i=0; i<solids.size(); i++){
+        m.collide_with_solid(*solids[i]); 
     }
 }

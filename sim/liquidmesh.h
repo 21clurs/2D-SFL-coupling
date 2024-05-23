@@ -5,7 +5,7 @@
 #include <vector>
 #include "mesh.h"
 #include "wallobject.h"
-#include "rectmesh.h"
+#include "solidmesh.h"
 
 class LiquidMesh : public Mesh
 {
@@ -25,7 +25,7 @@ class LiquidMesh : public Mesh
         void laplacian_smoothing();
 
         void collide_with_wall(WallObject& w);
-        void collide_with_rect(RectMesh r);
+        void collide_with_solid(SolidMesh& s);
 
     private:
         std::vector<bool> is_air;

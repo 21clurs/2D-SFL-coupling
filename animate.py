@@ -48,6 +48,10 @@ for frame in range(start, end):
             xPts = np.array([v[indexStart,0], v[indexEnd,0]])
             yPts = np.array([v[indexStart,1], v[indexEnd,1]])
             plt.plot(xPts, yPts, '#50a0c8')
+
+        if "-showpoints" in sys.argv:
+            for vertex in v:
+                plt.plot(vertex[0], vertex[1],marker=".",color='#ff0070')
         
         # set axes
         ax = plt.gca()

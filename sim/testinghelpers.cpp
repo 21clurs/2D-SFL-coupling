@@ -273,7 +273,7 @@ void TestingHelpers::testBEM(std::string shape, std::string fieldType, int n, st
 void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
     if (shape.compare("circle")==0){
         float theta = 2*M_PI/n;
-        double r=1;
+        double r=.5;
         Eigen::Vector2d center(0.0,0.0);
 
         for (size_t i=0; i<n; i++){
@@ -286,7 +286,7 @@ void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vecto
         assert(((void)"n is a multiple of 4 when generating a square", n%4==0));
         
         int nPerSide = n/4;
-        float sideLength = 2;
+        float sideLength = .5;
         float delta = sideLength/nPerSide;
 
         for(size_t i=0; i<nPerSide; i++){
@@ -434,7 +434,7 @@ void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vecto
         for(size_t i=0; i<n_inner; i++)
             faces[n_outer + i] = Eigen::Vector2i(n_outer + (i+1)%n_inner, n_outer + i);
     } else {
-        std::cout<<"please enter a valid shape type!"<<std::endl;
+        std::cout<<"\""<< shape<<"\" is not a valid shape type. Please enter a valid shape type!"<<std::endl;
         return;
     }
 }

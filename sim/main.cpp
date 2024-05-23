@@ -2,11 +2,12 @@
 #include <Eigen/Dense>
 #include <math.h>
 
-#include "testinghelpers.h"
-#include "sim.h"
 #include "liquidmesh.h"
+#include "sim.h"
+#include "solidmesh.h"
+#include "testinghelpers.h"
 #include "wallobject.h"
-#include "rectmesh.h"
+
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -59,13 +60,19 @@ int main(){
   s.addWall(&w2);
   s.addWall(&w3);
 
+
   // a little block in my cup
-  RectMesh r(-0.25, 0.25, -0.25, 0.25);
-  s.addRect(&r);
+  int n_inner = 8;
+  std::vector<Vector2d> testverts(n_inner);
+  std::vector<Vector2i> testfaces(n_inner);
+  TestingHelpers::genShape("circle",n_inner,testverts,testfaces);
+  SolidMesh testSolid(testverts,testfaces);
+  s.addSolid(&testSolid);
+
 
   s.collide(); // snap everything/set boundary flags properly, etc.
 
-  int num_frames = 240;
+  int num_frames = 10;
   for (int i=0; i<num_frames; i++){
     // sim stuff
     s.outputFrame(std::to_string(i)+".txt");
@@ -79,5 +86,26 @@ int main(){
   }
   std::cout << std::endl;
 
-  return 0;
+  // quick and dirty solid mesh test
+  /*
+  std::vector<Vector2d> testverts = {
+    Vector2d(-0.5,-0.5),
+    Vector2d(0.5,-0.5),
+    Vector2d(0.5,0.5),
+    Vector2d(-0.5,0.5)
+  };
+  std::vector<Vector2i> testfaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,0)
+  };
+  */
+  
+  //SolidMesh testSolid(testverts,testfaces);
+  /*
+  Vector2d testPoint = Vector2d(0.2501,-.25);
+  std::cout<<"Is point "<<testPoint[0]<<","<<testPoint[1]<<" in our solid mesh?"<<std::endl;
+  std::cout<<testSolid.checkCollisionAndSnap(testPoint)<<std::endl;
+  std::cout<<testPoint[0]<<" "<<testPoint[1]<<std::endl;*/
 }
