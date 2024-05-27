@@ -1,5 +1,14 @@
 #include "solidmesh.h"
 
+SolidMesh::SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : Mesh(in_verts, in_faces){ 
+    v_effective = Eigen::Vector2d(0,0);
+    vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
+}
+SolidMesh::SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : Mesh(in_verts, in_faces, in_vels){
+    v_effective = Eigen::Vector2d(0,0); 
+    vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
+}
+
 bool SolidMesh::checkCollisionAndSnap(Eigen::Vector2d& curr_pt){
     // iterate through faces
     double min_d;
@@ -49,4 +58,13 @@ bool SolidMesh::checkCollisionAndSnap(Eigen::Vector2d& curr_pt){
     // snap the point to the nearest face
     curr_pt = nearest_pt;
     return true;
+}
+
+void SolidMesh::setVelFunc(std::function<Eigen::Vector2d(double)> func){ vel_func = func; }
+
+void SolidMesh::advectFE(double curr_t, double dt){
+    for (size_t i=0; i< verts.size(); i++){
+        verts[i] += vel_func(curr_t)*dt;
+    }
+    v_effective = vel_func(curr_t)*dt;
 }

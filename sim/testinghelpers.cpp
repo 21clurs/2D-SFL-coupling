@@ -286,7 +286,7 @@ void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vecto
         assert(((void)"n is a multiple of 4 when generating a square", n%4==0));
         
         int nPerSide = n/4;
-        float sideLength = .5;
+        float sideLength = 1;
         float delta = sideLength/nPerSide;
 
         for(size_t i=0; i<nPerSide; i++){
@@ -298,6 +298,39 @@ void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vecto
             verts[2*nPerSide+i] = Eigen::Vector2d((sideLength/2)-i*delta, sideLength/2);
             // left
             verts[3*nPerSide+i] = Eigen::Vector2d(-sideLength/2, (sideLength/2)-i*delta);
+        }
+        for(size_t i=0; i<n; i++)
+            faces[i] = Eigen::Vector2i(i,(i+1)%n);
+    } else if (shape.compare("rectangle")==0){ 
+        assert(((void)"n is a multiple of 2 when generating a rectangle", n%2==0));
+        float w = 3;
+        float h = 0.5;
+        float ratio = w/h;
+
+        float bottom_y = -0.5;
+        
+        int nVertical =  (n/2)/(ratio+1);
+        int nHorizontal = (n/2)-nVertical;
+
+        // bottom
+        float delta = w/nHorizontal;
+        for(size_t i=0; i<nHorizontal; i++){
+            verts[i] = Eigen::Vector2d((-w/2) + i*delta, bottom_y);
+        }
+        // right
+        delta = h/nVertical;
+        for(size_t i=0; i<nVertical; i++){
+            verts[i+nHorizontal] = Eigen::Vector2d((w/2), bottom_y + i*delta);
+        }
+        // top
+        delta = w/nHorizontal;
+        for(size_t i=0; i<nHorizontal; i++){
+            verts[i+nHorizontal+nVertical] = Eigen::Vector2d((w/2)-i*delta, h+bottom_y);
+        }
+        // left
+        delta = h/nVertical;
+        for(size_t i=0; i<nVertical; i++){
+            verts[i+2*nHorizontal+nVertical] = Eigen::Vector2d(-(w/2), (h+bottom_y)-i*delta);
         }
         for(size_t i=0; i<n; i++)
             faces[i] = Eigen::Vector2i(i,(i+1)%n);

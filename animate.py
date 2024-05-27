@@ -67,6 +67,7 @@ for frame in range(start, end):
                 for i in range(len(vn)):
                     plt.arrow(v[i,0], v[i,1], vt[i,0]*0.2, vt[i,1]*0.2, head_width=.05, color="r")
             
+        plt.text(-1.9, -1.9, "Frame: {}".format(frame), fontsize = 11)
 
         # plt.show()
         plt.savefig('./outFrames/frame-'+str(frame)+'.png', format="png")

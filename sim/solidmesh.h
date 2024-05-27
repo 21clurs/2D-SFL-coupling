@@ -10,17 +10,22 @@
 
 class SolidMesh : public Mesh
 {
+    friend class LiquidMesh;
     public:
         // constructors
-        SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : Mesh(in_verts, in_faces){}
-        SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : Mesh(in_verts, in_faces, in_vels){}
+        SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
+        SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
         void setEps(double e){ epsilon = e; }
         bool checkCollisionAndSnap(Eigen::Vector2d& currpt);
-
-    private:
+        void setVelFunc(std::function<Eigen::Vector2d(double)> func);
+        void advectFE(double curr_t, double dt);
+    protected:
         std::vector<Eigen::Vector2d> vert_normals;
         std::vector<Eigen::Vector2d> face_normals;
+        Eigen::Vector2d v_effective; // assuming only translation-type movement
 
         double epsilon = 0.01;
+
+        std::function<Eigen::Vector2d(double)> vel_func;
 };
 #endif

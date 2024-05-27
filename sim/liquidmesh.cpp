@@ -83,6 +83,7 @@ void LiquidMesh::collide_with_wall(WallObject& w){
             is_air[i] = false;
             is_triple[i] = false;
             //std::cout<<"bLAH "<<i<<std::endl;
+            vels[i] = w.calcEffectiveVel(); //?
         }
     }
     update_triple_points();
@@ -94,12 +95,13 @@ void LiquidMesh::collide_with_solid(SolidMesh& s){
         if(s.checkCollisionAndSnap(verts[i]) == true){
 
             //std::cout<<"snapped: "<<verts[i]<<std::endl;
-            vels_solid[i] = Eigen::Vector2d(0,0);//placeholder
+            vels_solid[i] = s.v_effective;//placeholder
             
             is_solid[i] = true; 
             is_air[i] = false;
             is_triple[i] = false;
             //std::cout<<"bLAH "<<i<<std::endl;
+            //vels[i] =  s.v_effective; //?
         }
     }
     update_triple_points();

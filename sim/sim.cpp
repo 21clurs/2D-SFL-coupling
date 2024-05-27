@@ -14,8 +14,8 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     dt(dt),
     m(m),
     sigma(0.5),
-    sigma_SL(1.20),
-    sigma_SA(1.0),
+    sigma_SL(1.0),
+    sigma_SA(1.15),
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -1.0}))
 {
@@ -134,6 +134,9 @@ void Sim::step_advect(double t){
     }
     for (size_t i=0; i<walls.size(); i++){
         walls[i]->advectFE(t);
+    }
+    for (size_t i=0; i<solids.size(); i++){
+        solids[i]->advectFE(t-dt*30, dt);
     }
 }
 
@@ -576,9 +579,11 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     Eigen::VectorXd rhs = rhs_per_vertex.rowwise().sum();
 
     // linear solve
-    Eigen::VectorXd soln;
+    // DIRECT - LU
+    //Eigen::VectorXd soln = A.lu().solve(rhs);
+    // ITERATIVE - BICGSTAB
     Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A);
-    soln = solver.solve(rhs);
+    Eigen::VectorXd soln = solver.solve(rhs);
     
     /*
     std::cout<<"A: "<<A<<std::endl;
