@@ -66,5 +66,5 @@ void SolidMesh::advectFE(double curr_t, double dt){
     for (size_t i=0; i< verts.size(); i++){
         verts[i] += vel_func(curr_t)*dt;
     }
-    v_effective = vel_func(curr_t)*dt;
+    v_effective = vel_func(curr_t);//*dt;
 }
