@@ -14,7 +14,8 @@ using Eigen::Vector2d;
 using Eigen::Vector2i;
 
 int main(){
-  int n = 128;
+  float dt = 1.0/240.0;
+  int n = 128; // check back later why 10 on a rect is funky
 
   std::vector<Vector2d> verts(n);
   std::vector<Vector2i> faces(n);
@@ -22,14 +23,9 @@ int main(){
   std::vector<Vector2d> vels(n);
   TestingHelpers::generateVField("zero",n,verts,vels);
   LiquidMesh mesh(verts,faces,vels);
-  //for (int i=0; i<n; i++){
-    //std::cout << mesh.next_neighbor(i)<< std::endl;
-    //std::cout << mesh.vels[i]<< std::endl;
-  //}
-
-  float dt = 1.0/200.0;
 
   Sim s(mesh, n, dt);
+  
   /*
   std::cout<<"CIRCLE HHD"<<std::endl;
   TestingHelpers::testHHDErrorTables("circle","constant");
@@ -52,14 +48,6 @@ int main(){
   TestingHelpers::testBEMErrorTables("semicircle_h","3");
   */
 
-  // moving surface
-  /*
-  Vector2d a(-2.0,0);
-  Vector2d b(2.0,0);
-  WallObject w(dt, b, a);
-  w.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
-  s.addWall(&w);
-  */
   /*std::vector<Vector2d> testverts = {
     Vector2d(-3.0,-1.0),
     Vector2d(3.0,-1.0),
@@ -91,7 +79,7 @@ int main(){
   s.addWall(&w2);
   s.addWall(&w3);*/
 
-
+  // cup using solids
   std::vector<Vector2d> cupLeft = {
     Vector2d(-1.5,1.5),
     Vector2d(-1.7,1.5),
@@ -122,6 +110,8 @@ int main(){
   s.addSolid(&cupL);
   s.addSolid(&cupB);
   s.addSolid(&cupR);
+  
+  // dysfunctional because I don't deal with concave shapes (yet?)...
   /*std::vector<Vector2d> cupverts = {
     Vector2d(1.5,1.5),
     Vector2d(1.5,-0.5),
@@ -152,10 +142,10 @@ int main(){
   //std::vector<Vector2i> testfaces(n_inner);
   //TestingHelpers::genShape("circle",n_inner,testverts,testfaces);
   std::vector<Vector2d> testverts = {
-    Vector2d(-0.25,-0.05),
-    Vector2d(0.25,-0.05),
-    Vector2d(0.25,1.0),
-    Vector2d(-0.25,1.0)
+    Vector2d(-1.0,-0.0),
+    Vector2d(1.0,-0.0),
+    Vector2d(1.0,1.0),
+    Vector2d(-1.0,1.0)
   };
   std::vector<Vector2i> testfaces = {
     Vector2i(0,1),
@@ -166,10 +156,39 @@ int main(){
   SolidMesh testSolid(testverts,testfaces);
   s.addSolid(&testSolid);
   
+  /*std::vector<Vector2d> splitVerts = {
+    Vector2d(-2,0),
+    Vector2d(2,0),
+    Vector2d(0.1,0.5),
+    Vector2d(0.05,0.5),
+    Vector2d(0,0.5),
+    Vector2d(-0.05,0.5),
+    Vector2d(-0.1,0.5)
+  };
+  std::vector<Vector2i> splitFaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,4),
+    Vector2i(4,5),
+    Vector2i(5,6),
+    Vector2i(6,0)
+  };
+  LiquidMesh splitMesh(splitVerts,splitFaces);
+  std::cout<<"Mesh avg length: "<<splitMesh.calc_avg_face_length()<<std::endl;
+  Sim s(splitMesh, splitVerts.size(), dt);
+  */
+
+  // moving surface
+  /*Vector2d a(-2.0,0);
+  Vector2d b(2.0,0);
+  WallObject w(dt, b, a);
+  w.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
+  s.addWall(&w);*/
+  
   
   s.collide(); // snap everything/set boundary flags properly, etc.
-
-  int num_frames = 800;
+  int num_frames = 1000;
   for (int i=0; i<num_frames; i++){
     // sim stuff
     s.outputFrame(std::to_string(i)+".txt");
@@ -189,6 +208,7 @@ int main(){
   }
   std::cout << std::endl;
   
+
   // quick and dirty solid mesh test
   /*
   std::vector<Vector2d> testverts = {
@@ -211,4 +231,105 @@ int main(){
   std::cout<<"Is point "<<testPoint[0]<<","<<testPoint[1]<<" in our solid mesh?"<<std::endl;
   std::cout<<testSolid.checkCollisionAndSnap(testPoint)<<std::endl;
   std::cout<<testPoint[0]<<" "<<testPoint[1]<<std::endl;*/
+
+  // checking out edge splitting logic...
+  /*std::vector<Vector2d> splitVerts = {
+    Vector2d(-1,0),
+    Vector2d(1,0),
+    Vector2d(0.5,0.2),
+    Vector2d(0,0.2),
+    Vector2d(-0.5,0.2)
+  };
+  std::vector<Vector2i> splitFaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,4),
+    Vector2i(4,0)
+  };
+  LiquidMesh splitMesh(splitVerts,splitFaces);
+  std::cout<<"Mesh avg length: "<<splitMesh.calc_avg_face_length()<<std::endl;
+  splitMesh.edge_split();
+  std::cout<<"Verts: "<<std::endl;
+  for(size_t i=0; i<splitMesh.verts.size(); i++){
+    std::cout<<"("<<splitMesh.verts[i].x()<<","<<splitMesh.verts[i].y()<<")"<<std::endl;
+  }
+  std::cout<<"Faces: "<<std::endl;
+  for(size_t i=0; i<splitMesh.faces.size(); i++){
+    std::cout<<"("<<splitMesh.faces[i].x()<<","<<splitMesh.faces[i].y()<<")"<<std::endl;
+  }
+  std::cout<<"Verts prev face: "<<std::endl;
+  for(size_t i=0; i<splitMesh.vertsPrevFace.size(); i++){
+    std::cout<<i<<"->("<<splitMesh.vertsPrevFace[i]<<")"<<std::endl;
+  }
+  std::cout<<"Verts next face: "<<std::endl;
+  for(size_t i=0; i<splitMesh.vertsNextFace.size(); i++){
+    std::cout<<i<<"->("<<splitMesh.vertsNextFace[i]<<")"<<std::endl;
+  }*/
+  /*std::vector<Vector2d> splitVerts = {
+    Vector2d(-1,0),
+    Vector2d(1,0),
+    Vector2d(0.5,0.2),
+    Vector2d(0,0.2),
+    Vector2d(-0.5,0.2)
+  };
+  std::vector<Vector2i> splitFaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,4),
+    Vector2i(4,0)
+  };
+  LiquidMesh splitMesh(splitVerts,splitFaces);
+  std::cout<<"Mesh avg length: "<<splitMesh.calc_avg_face_length()<<std::endl;
+  splitMesh.edge_split();
+  std::cout<<"Verts: "<<std::endl;
+  for(size_t i=0; i<splitMesh.verts.size(); i++){
+    std::cout<<"("<<splitMesh.verts[i].x()<<","<<splitMesh.verts[i].y()<<")"<<std::endl;
+  }
+  std::cout<<"Faces: "<<std::endl;
+  for(size_t i=0; i<splitMesh.faces.size(); i++){
+    std::cout<<"("<<splitMesh.faces[i].x()<<","<<splitMesh.faces[i].y()<<")"<<std::endl;
+  }
+  std::cout<<"Verts prev face: "<<std::endl;
+  for(size_t i=0; i<splitMesh.vertsPrevFace.size(); i++){
+    std::cout<<i<<"->("<<splitMesh.vertsPrevFace[i]<<")"<<std::endl;
+  }
+  std::cout<<"Verts next face: "<<std::endl;
+  for(size_t i=0; i<splitMesh.vertsNextFace.size(); i++){
+    std::cout<<i<<"->("<<splitMesh.vertsNextFace[i]<<")"<<std::endl;
+  }*/
+
+  /*std::vector<Vector2d> collapseVerts = {
+    Vector2d(-1,0),
+    Vector2d(1,0),
+    Vector2d(0,1),
+    Vector2d(-0.1,1)
+  };
+  std::vector<Vector2i> collapseFaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,0)
+  };
+  LiquidMesh collapseMesh(collapseVerts,collapseFaces);
+  std::cout<<"Mesh avg length: "<<collapseMesh.calc_avg_face_length()<<std::endl;
+  collapseMesh.edge_collapse();
+  std::cout<<"Verts: "<<std::endl;
+  for(size_t i=0; i<collapseMesh.verts.size(); i++){
+    std::cout<<"("<<collapseMesh.verts[i].x()<<","<<collapseMesh.verts[i].y()<<")"<<std::endl;
+  }
+  std::cout<<"Faces: "<<std::endl;
+  for(size_t i=0; i<collapseMesh.faces.size(); i++){
+    std::cout<<"("<<collapseMesh.faces[i].x()<<","<<collapseMesh.faces[i].y()<<")"<<std::endl;
+  }
+  std::cout<<"Verts prev face: "<<std::endl;
+  for(size_t i=0; i<collapseMesh.vertsPrevFace.size(); i++){
+    std::cout<<i<<"->("<<collapseMesh.vertsPrevFace[i]<<")"<<std::endl;
+  }
+  std::cout<<"Verts next face: "<<std::endl;
+  for(size_t i=0; i<collapseMesh.vertsNextFace.size(); i++){
+    std::cout<<i<<"->("<<collapseMesh.vertsNextFace[i]<<")"<<std::endl;
+  }*/
+
 }

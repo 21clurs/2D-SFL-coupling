@@ -37,7 +37,7 @@ void TestingHelpers::generateVField(std::string fieldType, int n, std::vector<Ei
 }
 
 void TestingHelpers::testHHDErrorTables(std::string shape, std::string fieldType){
-    std::vector<size_t> N = {8, 16, 32, 64, 128, 256, 512};
+    std::vector<size_t> N = {4, 8, 16, 32, 64, 128, 256, 512};
     std::vector<Eigen::Vector2d> errs(N.size());
     for (size_t i=0; i<N.size(); i++){
         testHHD(shape, fieldType, N[i], errs[i]);
@@ -66,7 +66,7 @@ void TestingHelpers::testHHD(std::string shape, std::string fieldType, int n, Ei
 
     // set up test velocities -- this test only makes sense when this is a harmonic velocity field
     std::vector<Eigen::Vector2d> vels(n);
-    TestingHelpers::generateVField("harmonic_1",n,verts,vels);
+    TestingHelpers::generateVField(fieldType,n,verts,vels);
 
     // set up expected/theoretical result
     std::vector<Eigen::Vector2d> expected_post_HHD_vels(n);
@@ -273,7 +273,7 @@ void TestingHelpers::testBEM(std::string shape, std::string fieldType, int n, st
 void TestingHelpers::genShape(std::string shape, int n, std::vector<Eigen::Vector2d>& verts, std::vector<Eigen::Vector2i>& faces){
     if (shape.compare("circle")==0){
         float theta = 2*M_PI/n;
-        double r=.5;
+        double r=1;
         Eigen::Vector2d center(0.0,0.0);
 
         for (size_t i=0; i<n; i++){
