@@ -56,9 +56,29 @@ const Eigen::Vector2d Mesh::next_neighbor(const int vertIndex)
     return verts[faces[vertsNextFace[vertIndex]][1]];
 }
 
+const int Mesh::other_face_from_vert(const int vertIndex, const int faceIndex){
+    Eigen::Vector2i adjacent_faces = faces_from_vert(vertIndex);
+    assert(faceIndex == adjacent_faces.x() || faceIndex == adjacent_faces.y());
+    int otherFaceIndex = faceIndex == adjacent_faces.x() ? adjacent_faces.y() : adjacent_faces.x();
+    return otherFaceIndex;
+}
+
+const int Mesh::other_vert_from_face(const int faceIndex, const int vertIndex){
+    Eigen::Vector2i adjacent_verts = verts_from_face(faceIndex);
+    assert(vertIndex == adjacent_verts.x() || vertIndex == adjacent_verts.y());
+    int otherVertIndex = vertIndex == adjacent_verts.x() ? adjacent_verts.y() : adjacent_verts.x();
+    return otherVertIndex;
+}
+
 double Mesh::face_length(const int faceIndex){
     Eigen::Vector2i endpts = verts_from_face(faceIndex);
     return (verts[endpts[0]]-verts[endpts[1]]).norm();
+}
+double Mesh::calc_total_face_length(){
+    double total_face_length = 0;
+    for (size_t i=0; i<faces.size(); i++)
+        total_face_length += face_length(i);
+    return total_face_length;
 }
 double Mesh::calc_avg_face_length(){
     double total_face_length = 0;
@@ -135,6 +155,10 @@ double Mesh::signed_mean_curvature(const int vertIndex){
 }
 void Mesh::update_neighbor_face_vecs(){
     int s_index,t_index;
+    if (faces.size() != vertsPrevFace.size() || faces.size() != vertsNextFace.size()){
+        vertsPrevFace.resize(faces.size());
+        vertsNextFace.resize(faces.size());
+    }
     for (size_t i=0; i<faces.size(); i++){
         s_index = faces[i][0];
         t_index = faces[i][1];

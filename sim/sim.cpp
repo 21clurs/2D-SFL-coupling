@@ -15,9 +15,9 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     m(m),
     sigma(0.5),
     sigma_SL(1.0),
-    sigma_SA(1.15),
+    sigma_SA(1.0),
     rho(1.0),
-    gravity(Eigen::Vector2d({0.0, -1.0}))
+    gravity(Eigen::Vector2d({0.0, -0.0}))
 {
 }
 
@@ -31,8 +31,16 @@ void Sim::addSolid(SolidMesh* solid){
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
     std::ofstream file(filelocation+filename);
-    for (size_t i=0; i<m.verts.size(); i++)
-        file<<"v "<<m.verts[i][0]<<" "<<m.verts[i][1]<<std::endl;
+    for (size_t i=0; i<m.verts.size(); i++){
+        char vtype;
+        if (m.is_air[i])
+            vtype = 'a';
+        else if (m.is_solid[i])
+            vtype = 's';
+        else
+            vtype = 't';
+        file<<"v "<<m.verts[i][0]<<" "<<m.verts[i][1]<<" "<<vtype<<std::endl;
+    }
     file<<std::endl;
 
     // outward vertex norms
@@ -62,6 +70,7 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     file<<std::endl;
 
     // solids
+    size_t count = 0;
     for (size_t i=0; i<solids.size(); i++){
         // solid verts
         for (size_t j=0; j<solids[i]->verts.size(); j++){
@@ -69,8 +78,9 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         }
         // solid faces
         for (size_t j=0; j<solids[i]->faces.size(); j++){
-            file<<"f "<< m.faces.size()+walls.size()*2+ solids[i]->faces[j][0]<<" "<< m.faces.size()+walls.size()*2+ solids[i]->faces[j][1]<<std::endl;
+            file<<"f "<< m.faces.size()+walls.size()*2 + solids[i]->faces[j][0] + count<<" "<< m.faces.size()+walls.size()*2+ solids[i]->faces[j][1] + count<<std::endl;
         }
+        count += solids[i]->verts.size();
     }
     file.close();
     
@@ -102,28 +112,32 @@ void Sim::step_sim(double curr_t){
     }
     std::cout<<std::endl;*/
     step_advect(curr_t);
+    collide();
     remesh();
-    /*std::cout<<"post remesh vec"<<std::endl;
-    for (size_t i=0; i<m.verts.size(); i++){
+    //std::cout<<"post remesh vec "<<m.verts.size()<<std::endl;
+    /*for (size_t i=0; i<m.verts.size(); i++){
         std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
     }
     std::cout<<std::endl;*/
-    collide();
-    /*std::cout<<"post collide vec"<<std::endl;
-    for (size_t i=0; i<m.verts.size(); i++){
+    //collide(); // remesh will collide things
+
+    //outputFrame(std::to_string(1)+".txt");
+
+    //std::cout<<"post collide vec "<<m.verts.size()<<std::endl;
+    /*for (size_t i=0; i<m.verts.size(); i++){
         std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
     }
     std::cout<<std::endl;*/
     step_HHD();
-    /*std::cout<<"post HHD vels"<<std::endl;
-    for (size_t i=0; i<m.vels.size(); i++){
+    //std::cout<<"post HHD vels "<<m.vels.size()<<std::endl;
+    /*for (size_t i=0; i<m.vels.size(); i++){
         std::cout<<m.vels[i][0]<<", "<<m.vels[i][1]<<std::endl;
     }*/
-    step_gravity();
+    step_gravity(); // body forces only applied on div-free velocity field.
 
     step_BEM();
-    /*std::cout<<"post BEM vels"<<std::endl;
-    for (size_t i=0; i<m.vels.size(); i++){
+    //std::cout<<"post BEM vels "<<m.vels.size()<<std::endl;
+    /*for (size_t i=0; i<m.vels.size(); i++){
         std::cout<<m.vels[i][0]<<", "<<m.vels[i][1]<<std::endl;
     }*/
 }
@@ -730,7 +744,11 @@ double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
 }
 
 void Sim::remesh(){
-    m.laplacian_smoothing();
+    for(size_t i=0; i<1; i++){
+        m.remesh();
+        collide();
+    }
+    n = m.verts.size();
 }
 
 void Sim::collide(){
@@ -739,10 +757,12 @@ void Sim::collide(){
         // go through mesh points, calling collide and snap
         // if collide is true, set is_solid
         // need to recalibrate triple points
+    m.reset_boundary_types();
     for (size_t i=0; i<walls.size(); i++){
         m.collide_with_wall(*walls[i]);
     }
     for (size_t i=0; i<solids.size(); i++){
         m.collide_with_solid(*solids[i]); 
     }
+    m.update_triple_points();
 }

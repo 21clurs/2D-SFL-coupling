@@ -22,17 +22,25 @@ class LiquidMesh : public Mesh
 
         std::vector<bool> get_solid_faces();
 
-        void laplacian_smoothing();
+        void remesh();
 
+        void reset_boundary_types();
         void collide_with_wall(WallObject& w);
         void collide_with_solid(SolidMesh& s);
 
+        void laplacian_smoothing();
+        void edge_collapse();
+        void edge_split();
     private:
         std::vector<bool> is_air;
         std::vector<bool> is_solid;
         std::vector<bool> is_triple;
 
         void update_triple_points();
+
+        double minFaceLength;
+        double maxFaceLength;
+
 };
 
 #endif

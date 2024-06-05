@@ -13,7 +13,7 @@ class Mesh
         std::vector<Eigen::Vector2i> faces;     // assuming these are organized in some orientation [prev vertex, next vertex]
         std::vector<Eigen::Vector2d> vels;
 
-        // these are populated once at construction
+        // these are populated once at construction, and updated when the mesh is modified (i.e. edge splits, collapses)
         std::vector<int> vertsPrevFace;
         std::vector<int> vertsNextFace;
 
@@ -31,7 +31,11 @@ class Mesh
         const Eigen::Vector2d prev_neighbor(const int vertIndex);
         const Eigen::Vector2d next_neighbor(const int vertIndex);
 
+        const int other_face_from_vert(const int vertIndex, const int faceIndex);
+        const int other_vert_from_face(const int faceIndex, const int vertIndex);
+
         double face_length(const int faceIndex);
+        double calc_total_face_length();
         double calc_avg_face_length();
         double vert_area(const int vertIndex);
 
