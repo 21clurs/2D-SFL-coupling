@@ -10,54 +10,59 @@ SolidMesh::SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
 }
 
 bool SolidMesh::checkCollisionAndSnap(Eigen::Vector2d& curr_pt){
-    // iterate through faces
     double min_d;
     Eigen::Vector2d nearest_pt;
-    for (size_t i =0; i<faces.size(); i++){
-        // check if  curr_pt is on consistent side of all faces (i.e. "inside")
-        Eigen::Vector2d ptA = verts[faces[i].x()];
-        Eigen::Vector2d ptB = verts[faces[i].y()];
 
-        // finding (signed) distance from curr_pt to line, regardless of endpoints
-        double d_orth = ((curr_pt.x()-ptA.x())*(ptB.y()-ptA.y()) - (curr_pt.y()-ptA.y())*(ptB.x()-ptA.x())) / ((ptB-ptA).norm());
+    // iterate through faces
+    for (size_t i = 0; i<faces.size(); i++){
 
-        //std::cout<<"("<<ptA[0]<<", "<<ptA[1]<<")"<<"("<<ptB[0]<<", "<<ptB[1]<<")"<<" "<<d_orth<<std::endl;
+        // retrieve endpoints of current face, these should be oriented
+        Eigen::Vector2d ptA = verts[faces[i][0]];
+        Eigen::Vector2d ptB = verts[faces[i][1]];
 
-        if( d_orth>0 && abs(d_orth)>epsilon){
-            // this point is not inside the solid mesh, can end here
-            return false;
-        } else{    
-            // finding closest point on face to curr_pt
-            Eigen::Vector2d u = ptB-ptA;
-            //std::cout<<"u: "<<u.x()<<","<<u.y()<<std::endl;
-            Eigen::Vector2d v = curr_pt-ptA;
-            //std::cout<<"v: "<<v.x()<<","<<v.y()<<std::endl;
-            double t = (u.dot(v)/u.dot(u));
-            //std::cout<<"t: "<<t<<std::endl;
-            Eigen::Vector2d proj_pt;
-            
-            if (t>=0 && t<=1){
-                proj_pt = (1-t)*ptA + t*ptB;
-            } else{ // project to nearest endpoint
-                //std::cout<<"?"<<std::endl;
-                double g0 = (ptA - curr_pt).squaredNorm();
-                double g1 = (ptB - curr_pt).squaredNorm();
-                proj_pt = g0 < g1 ? ptA : ptB;
-            }
+        // first check to snap to 'sharp' features in geometry
+        // if we snap here, skip everything else
+        if ((curr_pt-ptA).norm()<epsilon){
+            curr_pt = ptA;
+            return true;
+        } else if ((curr_pt-ptB).norm()<epsilon){
+            curr_pt = ptB;
+            return true;
+        }
 
-            //std::cout<<"proj pt: "<<proj_pt[0]<<", "<<proj_pt[1]<<" : "<<t<<std::endl;
-        
-            // if this is reached, we are (at least currently) inside the solid mesh, or within the epsilon 'snapping' distance
-            if (i==0 || (proj_pt-curr_pt).norm()<=abs(min_d)){
-                min_d = (proj_pt-curr_pt).norm();
-                nearest_pt = proj_pt;// need to figure out how to do this
-            }
+        // finding closest point on the line defined by the face to curr_pt
+        Eigen::Vector2d u = ptB-ptA;        //std::cout<<"u: "<<u.x()<<","<<u.y()<<std::endl;
+        Eigen::Vector2d v = curr_pt-ptA;    //std::cout<<"v: "<<v.x()<<","<<v.y()<<std::endl;
+        double t = (u.dot(v)/u.dot(u));     //std::cout<<"t: "<<t<<std::endl;
+        // finding closest point
+        Eigen::Vector2d proj_pt;
+        if (t>=0 && t<=1){ 
+            // closest point is within the segment length
+            proj_pt = (1-t)*ptA + t*ptB;
+        } else{ 
+            // if outside the segment length, project to nearest endpoint
+            double g0 = (ptA - curr_pt).squaredNorm();
+            double g1 = (ptB - curr_pt).squaredNorm();
+            proj_pt = g0 < g1 ? ptA : ptB;
+        }
+    
+        // logic to get minimal distance to a segment in the SolidMesh
+        if (i==0 || (proj_pt-curr_pt).norm()<=abs(min_d)){
+            min_d = (proj_pt-curr_pt).norm();
+            nearest_pt = proj_pt;
         }
     }
-    // if this is reached, then currpt is colliding with the solid mesh
-    // snap the point to the nearest face
-    curr_pt = nearest_pt;
-    return true;
+
+    // since winding number when exactly on the segment is a little funky
+    // we define 'collision' as when min_d is less than our epsilon OR when the winding number is nonzero
+    // as nonzero winding number indicates that we are intersecting the mesh
+    if(min_d <= epsilon || windingNumber(curr_pt)>1.0e-8){
+        // snap the point to the nearest face
+        curr_pt = nearest_pt;
+        return true;
+    } else{
+        return false;
+    }
 }
 
 void SolidMesh::setVelFunc(std::function<Eigen::Vector2d(double)> func){ vel_func = func; }
@@ -67,4 +72,14 @@ void SolidMesh::advectFE(double curr_t, double dt){
         verts[i] += vel_func(curr_t)*dt;
     }
     v_effective = vel_func(curr_t);//*dt;
+}
+
+double SolidMesh::windingNumber(const Eigen::Vector2d& p){
+    double w = 0;
+    for (size_t i=0; i<faces.size(); i++){
+        Eigen::Vector2d a = verts[faces[i][0]] - p;
+        Eigen::Vector2d b = verts[faces[i][1]] - p;
+        w += atan2( (a.x()*b.y()-a.y()*b.x()) , (a.dot(b)) );
+    }
+    return w/(2*M_PI);
 }
