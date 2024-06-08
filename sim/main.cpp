@@ -80,7 +80,7 @@ int main(){
   s.addWall(&w3);*/
 
   // cup using solids
-  std::vector<Vector2d> cupLeft = {
+  /*std::vector<Vector2d> cupLeft = {
     Vector2d(-1.5,1.5),
     Vector2d(-1.7,1.5),
     Vector2d(-1.7,-0.7),
@@ -109,10 +109,10 @@ int main(){
   SolidMesh cupR(cupRight,cupFaces);
   s.addSolid(&cupL);
   s.addSolid(&cupB);
-  s.addSolid(&cupR);
+  s.addSolid(&cupR);*/
   
   // dysfunctional because I don't deal with concave shapes (yet?)...
-  /*std::vector<Vector2d> cupverts = {
+  std::vector<Vector2d> cupverts = {
     Vector2d(1.5,1.5),
     Vector2d(1.5,-0.5),
     Vector2d(-1.5,-0.5),
@@ -133,8 +133,15 @@ int main(){
     Vector2i(7,0),
   };
   SolidMesh cup(cupverts,cupfaces);
-  s.addSolid(&cup);*/
-
+  s.addSolid(&cup);
+/*
+  Vector2d testVert1 = Vector2d(-1.5,1.5);
+  std::cout<<"Testing... winding number of "<<testVert1.x()<<","<<testVert1.y()<<": "<<cup.windingNumber(testVert1)<<std::endl;
+  Vector2d testVert2 = Vector2d(-1.505,1.495);
+  std::cout<<"Testing... winding number of "<<testVert2.x()<<","<<testVert2.y()<<": "<<cup.windingNumber(testVert2)<<std::endl;
+  Vector2d testVert3 = Vector2d(-1.4,1.0);
+  std::cout<<"Testing... winding number of "<<testVert3.x()<<","<<testVert3.y()<<": "<<cup.windingNumber(testVert3)<<std::endl;
+*/
 
   // a little block in my cup
   //int n_inner = 8;
@@ -142,10 +149,10 @@ int main(){
   //std::vector<Vector2i> testfaces(n_inner);
   //TestingHelpers::genShape("circle",n_inner,testverts,testfaces);
   std::vector<Vector2d> testverts = {
-    Vector2d(-1.0,-0.0),
-    Vector2d(1.0,-0.0),
-    Vector2d(1.0,1.0),
-    Vector2d(-1.0,1.0)
+    Vector2d(-0.5,-0.05),
+    Vector2d(0.5,-0.05),
+    Vector2d(0.5,1.0),
+    Vector2d(-0.5,1.0)
   };
   std::vector<Vector2i> testfaces = {
     Vector2i(0,1),
@@ -195,7 +202,7 @@ int main(){
     s.step_sim(i*dt);
     
     // progress messages
-    std::cout<<"Simulation steps "<<i+1<<"/"<<num_frames<<" complete."<<"\r";
+    std::cout<<"Simulation steps "<<i+1<<"/"<<num_frames<<" complete."<<"\r"<<std::endl;
     std::cout.flush();
 
     if (i==30){
@@ -204,7 +211,6 @@ int main(){
     if (i==344){
       //testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, 0); });
     }
-    //std::cout << "FRAME: "<<i<< std::endl;
   }
   std::cout << std::endl;
   

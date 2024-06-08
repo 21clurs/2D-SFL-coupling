@@ -34,10 +34,12 @@ class Sim
         float dt;
         LiquidMesh& m;
 
+        // simulation parameters
         double sigma, sigma_SL, sigma_SA;
         double rho;
         Eigen::Vector2d gravity;
 
+        // solid objects in the sim
         std::vector<WallObject*> walls;
         std::vector<SolidMesh*> solids;
 

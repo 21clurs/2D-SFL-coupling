@@ -22,6 +22,7 @@ for frame in range(start, end):
     fList = []  # faces
     vnList = [] # vertex normals
     vtList = [] # vertex tangents
+    uList = [] # velocities
     vColorList = [] # vertice colours
 
     if os.path.isfile(outdir+str(frame)+".txt"):
@@ -47,12 +48,15 @@ for frame in range(start, end):
                     vnList.append([ float(r[1]), float(r[2])])
                 elif r[0] == 'vt':
                     vtList.append([ float(r[1]), float(r[2])])
+                elif r[0] == 'u':
+                    uList.append([ float(r[1]), float(r[2])])
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
         v = np.array(vList)
         f = np.array(fList)
         vn = np.array(vnList)
         vt = np.array(vtList)
+        u = np.array(uList)
 
         for face in f:
             [indexStart, indexEnd] = face
@@ -66,7 +70,8 @@ for frame in range(start, end):
         if "-showpoints" in sys.argv:
             for j in range(len(v)):
                 vertex = v[j]
-                plt.plot(vertex[0], vertex[1],marker=".",color=vColorList[j])
+                if vColorList[j] != 'k':
+                    plt.plot(vertex[0], vertex[1],marker=".",color=vColorList[j])
         
         # set axes
         ax = plt.gca()
@@ -81,6 +86,9 @@ for frame in range(start, end):
             if "-showtangents" in sys.argv:
                 for i in range(len(vn)):
                     plt.arrow(v[i,0], v[i,1], vt[i,0]*0.2, vt[i,1]*0.2, head_width=.05, color="r")
+            if "-showvels" in sys.argv:
+                for i in range(len(u)):
+                    plt.arrow(v[i,0], v[i,1], u[i,0]*0.5, u[i,1]*0.5, head_width=.05)
             if "-shownumpoints" in sys.argv:
                 plt.text(1.4, -1.9, "n: {}".format(len(v)), fontsize = 11)
             

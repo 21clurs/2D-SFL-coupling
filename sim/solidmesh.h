@@ -24,7 +24,7 @@ class SolidMesh : public Mesh
         std::vector<Eigen::Vector2d> face_normals;
         Eigen::Vector2d v_effective; // assuming only translation-type movement
 
-        double epsilon = 0.01;
+        double epsilon = 0.02;
 
         std::function<Eigen::Vector2d(double)> vel_func;
         

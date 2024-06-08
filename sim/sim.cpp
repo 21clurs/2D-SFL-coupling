@@ -53,6 +53,11 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         file<<"vt "<<(m.calc_vertex_tangent(i))[0]<<" "<<(m.calc_vertex_tangent(i))[1]<<std::endl;
     file<<std::endl;
 
+    // vels
+    for (size_t i=0; i<m.faces.size(); i++)
+        file<<"u "<<m.vels[i][0]<<" "<<m.vels[i][1]<<std::endl;
+    file<<std::endl;
+
     // faces
     for (size_t i=0; i<m.faces.size(); i++)
         file<<"f "<<m.faces[i][0]<<" "<<m.faces[i][1]<<std::endl;
@@ -744,7 +749,7 @@ double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
 }
 
 void Sim::remesh(){
-    for(size_t i=0; i<1; i++){
+    for(size_t i=0; i<5; i++){
         m.remesh();
         collide();
     }
