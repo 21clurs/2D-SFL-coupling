@@ -202,7 +202,7 @@ int main(){
     s.step_sim(i*dt);
     
     // progress messages
-    std::cout<<"Simulation steps "<<i+1<<"/"<<num_frames<<" complete."<<"\r"<<std::endl;
+    std::cout<<"Simulation steps "<<i+1<<"/"<<num_frames<<" complete."<<"\r";
     std::cout.flush();
 
     if (i==30){

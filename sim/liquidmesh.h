@@ -10,6 +10,7 @@
 class LiquidMesh : public Mesh
 {
     friend class Sim;
+    friend class Scenes;
     friend class TestingHelpers;
     protected:
         std::vector<Eigen::Vector2d> vels_solid;

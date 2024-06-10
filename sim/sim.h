@@ -11,6 +11,7 @@
 class Sim
 {
     friend class TestingHelpers;
+    friend class Scenes;
     public:
 
         Sim(LiquidMesh& m, int n, float dt); 
