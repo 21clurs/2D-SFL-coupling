@@ -21,10 +21,6 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
 {
 }
 
-void Sim::addWall(WallObject* wall){
-    walls.emplace_back(wall);
-}
-
 void Sim::addSolid(SolidMesh* solid){
     solids.emplace_back(solid);
 }
@@ -63,17 +59,6 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         file<<"f "<<m.faces[i][0]<<" "<<m.faces[i][1]<<std::endl;
     file<<std::endl;
 
-    // walls
-    for (size_t i=0; i<walls.size(); i++){
-        // wall verts
-        file<<"v "<<walls[i]->endptA[0]<<" "<<walls[i]->endptA[1]<<std::endl;
-        file<<"v "<<walls[i]->endptB[0]<<" "<<walls[i]->endptB[1]<<std::endl;
-
-        // wall faces -- a little hacky but functional for now
-        file<<"f "<<m.faces.size()+2*i<<" "<<m.faces.size()+2*i+1<<std::endl; 
-    }
-    file<<std::endl;
-
     // solids
     size_t count = 0;
     for (size_t i=0; i<solids.size(); i++){
@@ -83,7 +68,7 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         }
         // solid faces
         for (size_t j=0; j<solids[i]->faces.size(); j++){
-            file<<"f "<< m.faces.size()+walls.size()*2 + solids[i]->faces[j][0] + count<<" "<< m.faces.size()+walls.size()*2+ solids[i]->faces[j][1] + count<<std::endl;
+            file<<"f "<< m.faces.size()+ solids[i]->faces[j][0] + count<<" "<< m.faces.size()+ solids[i]->faces[j][1] + count<<std::endl;
         }
         count += solids[i]->verts.size();
     }
@@ -150,9 +135,6 @@ void Sim::step_sim(double curr_t){
 void Sim::step_advect(double t){
     for (size_t i=0; i<n; i++){
         m.verts[i] = m.verts[i] + m.vels[i]*dt;
-    }
-    for (size_t i=0; i<walls.size(); i++){
-        walls[i]->advectFE(t);
     }
     for (size_t i=0; i<solids.size(); i++){
         solids[i]->advectFE(t-dt*30, dt);
@@ -757,15 +739,14 @@ void Sim::remesh(){
 }
 
 void Sim::collide(){
-    // go through each wall in sim
-    // collide mesh with each wall
+
+    // go through each solid in sim
+    // collide liquid mesh with each wall
         // go through mesh points, calling collide and snap
         // if collide is true, set is_solid
-        // need to recalibrate triple points
+        // then recalibrate triple points
+
     m.reset_boundary_types();
-    for (size_t i=0; i<walls.size(); i++){
-        m.collide_with_wall(*walls[i]);
-    }
     for (size_t i=0; i<solids.size(); i++){
         m.collide_with_solid(*solids[i]); 
     }

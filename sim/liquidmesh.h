@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <vector>
 #include "mesh.h"
-#include "wallobject.h"
 #include "solidmesh.h"
 
 class LiquidMesh : public Mesh
@@ -25,7 +24,6 @@ class LiquidMesh : public Mesh
         void remesh();
 
         void reset_boundary_types();
-        void collide_with_wall(WallObject& w);
         void collide_with_solid(SolidMesh& s);
 
         void laplacian_smoothing();

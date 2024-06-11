@@ -5,8 +5,6 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include "mesh.h"
-#include "wallobject.h"
-
 
 class SolidMesh : public Mesh
 {

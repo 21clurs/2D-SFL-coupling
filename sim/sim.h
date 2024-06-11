@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 #include "liquidmesh.h"
-#include "wallobject.h"
 #include "solidmesh.h"
 
 class Sim
@@ -14,8 +13,7 @@ class Sim
     public:
 
         Sim(LiquidMesh& m, int n, float dt); 
-        
-        void addWall(WallObject* wall);
+
         void addSolid(SolidMesh* solid);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
@@ -40,7 +38,6 @@ class Sim
         Eigen::Vector2d gravity;
 
         // solid objects in the sim
-        std::vector<WallObject*> walls;
         std::vector<SolidMesh*> solids;
 
         void remesh();

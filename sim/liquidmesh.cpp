@@ -283,23 +283,6 @@ void LiquidMesh::reset_boundary_types(){
     is_triple = std::vector<bool>(is_triple.size(), false);
 }
 
-void LiquidMesh::collide_with_wall(WallObject& w){
-    for(size_t i=0; i<verts.size(); i++){
-        //std::cout<<"og: "<<verts[i]<<std::endl;
-        if(w.checkCollisionAndSnap(verts[i]) == true){
-
-            //std::cout<<"snapped: "<<verts[i]<<std::endl;
-            vels_solid[i] = w.calcEffectiveVel();
-            
-            is_solid[i] = true; 
-            is_air[i] = false;
-            is_triple[i] = false;
-
-            // vels[i] = w.calcEffectiveVel(); //?
-        }
-    }
-}
-
 void LiquidMesh::collide_with_solid(SolidMesh& s){
     for(size_t i=0; i<verts.size(); i++){
         //std::cout<<"og: "<<verts[i]<<std::endl;

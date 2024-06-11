@@ -6,7 +6,6 @@
 #include "sim.h"
 #include "solidmesh.h"
 #include "testinghelpers.h"
-#include "wallobject.h"
 #include "rigidbody.h"
 
 
@@ -65,21 +64,6 @@ int main(){
   testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
   s.addSolid(&testSolid);*/
   
-  // cup
-  /*Vector2d a(-1.5,1.5);
-  Vector2d b(-1.5,-0.5);
-  Vector2d c(1.5,-0.5);
-  Vector2d d(1.5,1.5);
-  WallObject w1(dt, b, a);
-  WallObject w2(dt, c, b);
-  WallObject w3(dt, d, c);
-  w1.setVelFunc([](double t)->Vector2d{ return Vector2d(0.0,0.0); });
-  w2.setVelFunc([](double t)->Vector2d{ return Vector2d(0.0,0.0); });
-  w3.setVelFunc([](double t)->Vector2d{ return Vector2d(0.0,0.0); });
-  s.addWall(&w1);
-  s.addWall(&w2);
-  s.addWall(&w3);*/
-
   // cup using solids
   /*std::vector<Vector2d> cupLeft = {
     Vector2d(-1.5,1.5),
@@ -190,20 +174,20 @@ int main(){
   // moving surface
   /*Vector2d a(-2.0,0);
   Vector2d b(2.0,0);
-  WallObject w(dt, b, a);
+  Object w(dt, b, a);
   w.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
   s.addWall(&w);*/
   
   
   s.collide(); // snap everything/set boundary flags properly, etc.
-  int num_frames = 0;
+  int num_frames = 1000;
   for (int i=0; i<num_frames; i++){
     // sim stuff
     s.outputFrame(std::to_string(i)+".txt");
     s.step_sim(i*dt);
     
     // progress messages
-    std::cout<<"Simulation steps "<<i+1<<"/"<<num_frames<<" complete."<<"\r"<<std::endl;
+    std::cout<<"Simulation steps "<<i+1<<"/"<<num_frames<<" complete."<<"\r";
     std::cout.flush();
 
     if (i==30){
