@@ -7,6 +7,7 @@
 #include "solidmesh.h"
 #include "testinghelpers.h"
 #include "wallobject.h"
+#include "rigidbody.h"
 
 
 using Eigen::MatrixXd;
@@ -195,7 +196,7 @@ int main(){
   
   
   s.collide(); // snap everything/set boundary flags properly, etc.
-  int num_frames = 1000;
+  int num_frames = 0;
   for (int i=0; i<num_frames; i++){
     // sim stuff
     s.outputFrame(std::to_string(i)+".txt");
@@ -213,6 +214,32 @@ int main(){
     }
   }
   std::cout << std::endl;
+
+  // quick and dirty rigid body tests
+  std::vector<Vector2d> squareverts = {
+    Vector2d(0,0),
+    Vector2d(1,0),
+    Vector2d(1,1),
+    Vector2d(0,1),
+    /*Vector2d(0.5,0.5),
+    Vector2d(0.8,0.5),
+    Vector2d(0.8,0.2),
+    Vector2d(0.5,0.2)*/
+  };
+  std::vector<Vector2i> squarefaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,0),
+    /*Vector2i(4,5),
+    Vector2i(5,6),
+    Vector2i(6,7),
+    Vector2i(7,4)*/
+  };
+  RigidBody testRB(squareverts,squarefaces);
+  std::cout<<"area: "<<testRB.area<<std::endl;
+  std::cout<<"COM: "<<testRB.com[0]<<","<<testRB.com[1]<<std::endl;
+  std::cout<<"MOI: "<<testRB.moi<<std::endl;
   
 
   // quick and dirty solid mesh test
