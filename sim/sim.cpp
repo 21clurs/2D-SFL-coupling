@@ -740,11 +740,10 @@ void Sim::remesh(){
 
 void Sim::collide(){
 
-    // go through each solid in sim
-    // collide liquid mesh with each wall
-        // go through mesh points, calling collide and snap
-        // if collide is true, set is_solid
-        // then recalibrate triple points
+    // collide liquid mesh with each solid
+    // go through mesh points, calling collide and snap
+    // if collide is true, set is_solid
+    // then recalibrate triple points
 
     m.reset_boundary_types();
     for (size_t i=0; i<solids.size(); i++){
