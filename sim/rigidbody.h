@@ -9,9 +9,6 @@
 class RigidBody : public SolidMesh
 {
     public:
-        double theta;                   // RigidBody rotation around its COM
-        Eigen::Vector2d translation;    // RigidBody translation
-        
         double area;
         Eigen::Vector2d com;            // center of mass
         double moi;                     // moment of inertia about the COM
@@ -20,10 +17,22 @@ class RigidBody : public SolidMesh
         RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
         RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
 
+        // setters
+        void setRotation(double theta);
+        void setTranslation(Eigen::Vector2d t){ translation = t; };
+
+        void retrieveCurrentVerts(std::vector<Eigen::Vector2d>& v);
+
     protected:
+        double rotationTheta;           // RigidBody angle of rotation around its COM
+        Eigen::Vector2d translation;    // RigidBody translation
+        Eigen::Matrix2d rotationMat;
+
         void calculateArea();
         void calculateCOM();
         void calculateMOI();
+
+        void updateRotationMat();
 };
 
 #endif

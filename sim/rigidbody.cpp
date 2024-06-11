@@ -1,6 +1,7 @@
 #include "rigidbody.h"
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : SolidMesh(in_verts, in_faces){
-    theta = 0;
+    rotationTheta = 0;
+    updateRotationMat();
     translation = Eigen::Vector2d(0,0);
     calculateArea();
     calculateCOM();
@@ -8,11 +9,17 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
 }
 
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : SolidMesh(in_verts, in_faces, in_vels){
-    theta = 0;
+    rotationTheta = 0;
+    updateRotationMat();
     translation = Eigen::Vector2d(0,0);
     calculateArea();
     calculateCOM();
     calculateMOI();
+}
+
+void RigidBody::setRotation(double theta){
+    rotationTheta = theta;
+    updateRotationMat();
 }
 
 void RigidBody::calculateArea(){
@@ -54,4 +61,16 @@ void RigidBody::calculateMOI(){
     I_x /= 12;
     I_y /= 12;
     moi = I_x + I_y; // placeholder
+}
+
+void RigidBody::updateRotationMat(){
+    rotationMat << cos(rotationTheta), sin(rotationTheta),
+                -sin(rotationTheta), cos(rotationTheta);
+}
+
+void RigidBody::retrieveCurrentVerts(std::vector<Eigen::Vector2d>& v){
+    assert(v.size() == verts.size());
+    for (size_t i = 0; i<verts.size(); i++){
+        v[i] = rotationMat*(verts[i]-com) + com + translation;
+    }
 }
