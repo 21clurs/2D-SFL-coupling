@@ -64,8 +64,9 @@ void RigidBody::calculateMOI(){
 }
 
 void RigidBody::updateRotationMat(){
-    rotationMat << cos(rotationTheta), sin(rotationTheta),
-                -sin(rotationTheta), cos(rotationTheta);
+    // rotates clockwise by theta
+    rotationMat << cos(rotationTheta), -sin(rotationTheta),
+                sin(rotationTheta), cos(rotationTheta);
 }
 
 void RigidBody::retrieveCurrentVerts(std::vector<Eigen::Vector2d>& v){
