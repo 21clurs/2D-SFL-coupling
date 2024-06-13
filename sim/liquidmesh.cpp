@@ -11,6 +11,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_solid = std::vector<bool>(verts.size(), false);
     is_triple = std::vector<bool>(verts.size(), false);
 
+    is_corner = std::vector<bool>(verts.size(), false);
+
     minFaceLength = 0.7*calc_avg_face_length();
     maxFaceLength = 1.3*calc_avg_face_length();
 }
@@ -25,6 +27,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_solid = std::vector<bool>(verts.size(), false);
     is_triple = std::vector<bool>(verts.size(), false);
 
+    is_corner = std::vector<bool>(verts.size(), false);
+
     minFaceLength = 0.7*calc_avg_face_length();
     maxFaceLength = 1.4*calc_avg_face_length();
 }
@@ -35,6 +39,11 @@ void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, 
     is_triple = triple;
 }
 
+void LiquidMesh::set_boundaries_for_vertex(int i, bool air, bool solid, bool triple){
+    is_air[i] = air;
+    is_solid[i] = solid;
+    is_triple[i] = triple;
+}
 
 void LiquidMesh::remesh(){
     edge_split();
@@ -50,8 +59,8 @@ void LiquidMesh::laplacian_smoothing()
 
     Eigen::Vector2d n_i;
     for (size_t i=0; i<verts.size(); i++){
-        // we do not smooth/move triple points
-        if (is_triple[i]){
+        // we do not smooth/move triple points or points at corners
+        if (is_triple[i] || is_corner[i]){
             C[i] = verts[i];
             proj[i] = Eigen::Vector2d(0.0, 0.0);
         }
@@ -281,21 +290,4 @@ void LiquidMesh::reset_boundary_types(){
     is_air = std::vector<bool>(is_air.size(), true);
     is_solid = std::vector<bool>(is_solid.size(), false);
     is_triple = std::vector<bool>(is_triple.size(), false);
-}
-
-void LiquidMesh::collide_with_solid(SolidMesh& s){
-    for(size_t i=0; i<verts.size(); i++){
-        //std::cout<<"og: "<<verts[i]<<std::endl;
-        if(s.checkCollisionAndSnap(verts[i]) == true){
-
-            //std::cout<<"snapped: "<<verts[i]<<std::endl;
-            vels_solid[i] = s.v_effective;
-            
-            is_solid[i] = true; 
-            is_air[i] = false;
-            is_triple[i] = false;
-
-            //vels[i] =  s.v_effective; //?
-        }
-    }
 }

@@ -65,6 +65,17 @@ bool SolidMesh::checkCollisionAndSnap(Eigen::Vector2d& curr_pt){
     }
 }
 
+void SolidMesh::collideAndSnap(LiquidMesh& l){
+    for(size_t i=0; i<l.verts.size(); i++){
+        if (checkCollisionAndSnap(l.verts[i]) == true){
+            //std::cout<<"snapped: "<<verts[i]<<std::endl;
+            l.vels_solid[i] = v_effective;
+            
+            l.set_boundaries_for_vertex(i, false, true, false);
+        }
+    }
+}
+
 void SolidMesh::setVelFunc(std::function<Eigen::Vector2d(double)> func){ vel_func = func; }
 
 void SolidMesh::advectFE(double curr_t, double dt){

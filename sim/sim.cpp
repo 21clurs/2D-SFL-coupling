@@ -747,7 +747,7 @@ void Sim::collide(){
 
     m.reset_boundary_types();
     for (size_t i=0; i<solids.size(); i++){
-        m.collide_with_solid(*solids[i]); 
+        solids[i]->collideAndSnap(m);
     }
     m.update_triple_points();
 }

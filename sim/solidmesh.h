@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include "mesh.h"
+#include "liquidmesh.h"
 
 class SolidMesh : public Mesh
 {
@@ -17,6 +18,7 @@ class SolidMesh : public Mesh
         bool checkCollisionAndSnap(Eigen::Vector2d& currpt);
         void setVelFunc(std::function<Eigen::Vector2d(double)> func);
         void advectFE(double curr_t, double dt);
+        void collideAndSnap(LiquidMesh& l);
     protected:
         std::vector<Eigen::Vector2d> vert_normals;
         std::vector<Eigen::Vector2d> face_normals;
