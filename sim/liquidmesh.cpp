@@ -39,15 +39,17 @@ void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, 
     is_triple = triple;
 }
 
-void LiquidMesh::set_boundaries_for_vertex(int i, bool air, bool solid, bool triple){
+void LiquidMesh::set_boundaries_for_vertex(int i, bool air, bool solid, bool triple, bool corner){
     is_air[i] = air;
     is_solid[i] = solid;
     is_triple[i] = triple;
+
+    is_corner[i] = corner;
 }
 
 void LiquidMesh::remesh(){
-    edge_split();
-    edge_collapse();
+    //edge_split();
+    //edge_collapse();
     laplacian_smoothing();
 }
 
@@ -290,4 +292,6 @@ void LiquidMesh::reset_boundary_types(){
     is_air = std::vector<bool>(is_air.size(), true);
     is_solid = std::vector<bool>(is_solid.size(), false);
     is_triple = std::vector<bool>(is_triple.size(), false);
+
+    is_corner = std::vector<bool>(is_corner.size(), false);
 }
