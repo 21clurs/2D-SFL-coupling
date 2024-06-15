@@ -385,7 +385,7 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             double pressure_jump_normal_to_triple_junction = st_force_combined.dot(-t_solid_outward) / triple_junction_virtual_width;
 
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
-            BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_a, not dpdn
+            BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
         }
     }
 

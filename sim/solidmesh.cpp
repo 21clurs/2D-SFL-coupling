@@ -69,7 +69,7 @@ void SolidMesh::collideAndSnap(LiquidMesh& l){
     // for each vertex in the given LiquidMesh
     for(size_t j=0; j<l.verts.size(); j++){
         Eigen::Vector2d curr_pt = l.verts[j];
-        bool snapped_to_corner = false;
+        bool pt_snapped_to_solid_corner = false;
 
         double min_d;
         Eigen::Vector2d nearest_pt;
@@ -83,14 +83,14 @@ void SolidMesh::collideAndSnap(LiquidMesh& l){
 
             // first check to snap to 'sharp' features in geometry, if so, we can skip the rest of the loop
             if ((curr_pt-ptA).norm()<epsilon){
-                nearest_pt = ptA;
                 min_d = (curr_pt-ptA).norm();
-                snapped_to_corner = true;
+                nearest_pt = ptA;
+                pt_snapped_to_solid_corner = true;
                 break;
             } else if ((curr_pt-ptB).norm()<epsilon){
-                nearest_pt = ptB;
                 min_d = (curr_pt-ptB).norm();
-                snapped_to_corner = true;
+                nearest_pt = ptB;
+                pt_snapped_to_solid_corner = true;
                 break;
             } else {
                 // finding closest point on the line defined by the face to curr_pt
@@ -125,7 +125,7 @@ void SolidMesh::collideAndSnap(LiquidMesh& l){
             l.verts[j] = nearest_pt;
             // set effective velocity
             l.vels_solid[j] = v_effective;
-            l.set_boundaries_for_vertex(j, false, true, false, snapped_to_corner);
+            l.set_boundaries_for_vertex(j, false, true, false, pt_snapped_to_solid_corner);
         }
     }
 }

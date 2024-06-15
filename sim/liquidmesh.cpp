@@ -62,7 +62,7 @@ void LiquidMesh::laplacian_smoothing()
     Eigen::Vector2d n_i;
     for (size_t i=0; i<verts.size(); i++){
         // we do not smooth/move triple points or points at corners
-        if (is_triple[i] || is_corner[i]){
+        if (is_triple[i]){//} || is_corner[i]){
             C[i] = verts[i];
             proj[i] = Eigen::Vector2d(0.0, 0.0);
         }
