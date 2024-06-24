@@ -19,7 +19,9 @@ class Sim
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
         void step_sim(double curr_t);
+        //void step_solidinflux();
         void step_advect(double t);
+        //void step_solidinfluxreverse();
         void step_HHD();
         void step_gravity();
         void step_BEM();

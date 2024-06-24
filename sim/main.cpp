@@ -220,11 +220,12 @@ int main(){
     Vector2i(6,7),
     Vector2i(7,4)*/
   };
+  /*
   RigidBody testRB(squareverts,squarefaces);
   std::cout<<"area: "<<testRB.area<<std::endl;
   std::cout<<"COM: "<<testRB.com[0]<<","<<testRB.com[1]<<std::endl;
   std::cout<<"MOI: "<<testRB.moi<<std::endl;
-  
+  */
 
   // quick and dirty solid mesh test
   /*

@@ -32,7 +32,9 @@ for frame in range(start, end):
                 if r[0] == 'v':
                     vList.append([ float(r[1]), float(r[2])])
                     if len(r)>3:
-                        if "a" in r[3]:
+                        if "c" in r[3]:
+                            vColorList.append('g')
+                        elif "a" in r[3]:
                             vColorList.append('#3ec1d5')
                         elif "s" in r[3]:
                             vColorList.append('#ff0070')
