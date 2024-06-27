@@ -42,6 +42,14 @@ class Sim
         // solid objects in the sim
         std::vector<SolidMesh*> solids;
 
+        // marker particles
+        std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
+        Eigen::Vector2d eval_interior_vel(Eigen::Vector2d x);
+
+        // holds p and dpdn from the most current BEM step-- necessary to evaluate marker particles
+        Eigen::VectorXd p;
+        Eigen::VectorXd dpdn;
+
         void remesh();
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);

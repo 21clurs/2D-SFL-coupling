@@ -19,6 +19,9 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -5.0}))
 {
+    p = Eigen::VectorXd::Zero(n);
+    dpdn = Eigen::VectorXd::Zero(n);
+    markerparticles = {Eigen::Vector2d(-1,-0.25)};
 }
 
 void Sim::addSolid(SolidMesh* solid){
@@ -73,6 +76,12 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
             file<<"f "<< m.faces.size()+ solids[i]->faces[j][0] + count<<" "<< m.faces.size()+ solids[i]->faces[j][1] + count<<std::endl;
         }
         count += solids[i]->verts.size();
+    }
+    file<<std::endl;
+
+    // marker particles
+    for (size_t i=0; i<markerparticles.size(); i++){
+        file<<"p "<<markerparticles[i][0]<<" "<<markerparticles[i][1]<<std::endl;
     }
     file.close();
     
@@ -163,11 +172,17 @@ void Sim::step_solidinflux(){
 */
 
 void Sim::step_advect(double t){
+    // advect the liquid mesh
     for (size_t i=0; i<n; i++){
         m.verts[i] = m.verts[i] + m.vels[i]*dt;
     }
+    // advect the scripted solids
     for (size_t i=0; i<solids.size(); i++){
         solids[i]->advectFE(t-dt*30, dt);
+    }
+    // "advect" the marker particles
+    for (size_t i=0; i<markerparticles.size(); i++){
+        markerparticles[i] = markerparticles[i] + eval_interior_vel(markerparticles[i])*dt;
     }
 }
 
@@ -361,8 +376,10 @@ void Sim::step_BEM(){
     Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
     step_BEM_BC(BC_p, BC_dpdn);
     
-    Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
-    Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
+    // reset p and dpdn, and make correct size
+    p = Eigen::VectorXd::Zero(N);
+    dpdn = Eigen::VectorXd::Zero(N);
+
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn);
     
     step_BEM_gradP(BC_p, BC_dpdn, p,dpdn);
@@ -598,7 +615,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     }
     Eigen::MatrixXd collocA = collocA_solid + collocA_air;
 
-    // row-sum
+    // row-sum to find diagonal entries
     for (size_t i=0; i<N; i++){
         double omega_i = m.solid_angle(i) * negOneOver2pi;
         collocA(i,i) = omega_i - collocA.row(i).sum(); 
@@ -759,6 +776,50 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     for (size_t i=0; i<m.verts.size(); i++){
         m.vels[i] += dv[i];
     }
+}
+
+Eigen::Vector2d Sim::eval_interior_vel(Eigen::Vector2d x){
+    // evaluating BIE (2.20) from W.S. Hall BEM book at given point x
+
+    double delta = 0.001;
+    std::vector<Eigen::Vector2d> points = {
+        Eigen::Vector2d(x.x()-delta, x.y()), 
+        Eigen::Vector2d(x.x()+delta, x.y()), 
+        Eigen::Vector2d(x.x(), x.y()-delta), 
+        Eigen::Vector2d(x.x(), x.y()+delta)
+    };
+    Eigen::Vector4d p_vals;
+
+    for (size_t j = 0; j<points.size(); j++){
+        double val_p = 0;
+        // will be approximating with a Gauss Quad on each face
+        const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
+        // iterate through faces
+        for (size_t fi=0; fi<m.faces.size(); fi++){
+            Eigen::Vector2i endpts = m.verts_from_face(fi); // endpoint indices
+            Eigen::Vector2d n_y = m.calc_face_normal(fi);
+            double val_fi = 0;
+            // iterate through quadrature points
+            for (size_t qi = 0; qi < quadrature_GQ.size(); qi++){
+                // quadrature points and weights
+                double qik = quadrature_GQ[qi].x();
+                double qiw = quadrature_GQ[qi].y();
+
+                Eigen::Vector2d yk = lin_interp(m.verts[endpts[0]], m.verts[endpts[1]], qik);
+                double p_yk = M_1(qik)*p[endpts[0]] + M_2(qik)*p[endpts[1]];
+                double dpdn_yk = M_1(qik)*dpdn[endpts[0]] + M_2(qik)*dpdn[endpts[1]];
+                
+                val_fi += qiw * ( p_yk*BoundaryIntegral::dGdnx(yk, x, n_y) - dpdn_yk*BoundaryIntegral::G(yk,x) );
+            }
+            val_p += val_fi * 0.5 * m.face_length(fi);
+        }
+        p_vals[j] = (1/(2*M_PI)) * val_p;
+    }
+    double v_x = (p_vals[1]-p_vals[0])/(2*delta);
+    double v_y = (p_vals[3]-p_vals[2])/(2*delta);
+    std::cout<<p_vals<<std::endl;
+
+    return Eigen::Vector2d(v_x, v_y);
 }
 
 Eigen::Vector2d Sim::lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q){
