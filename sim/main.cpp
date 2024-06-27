@@ -6,7 +6,7 @@
 #include "sim.h"
 #include "solidmesh.h"
 #include "testinghelpers.h"
-#include "wallobject.h"
+#include "rigidbody.h"
 
 
 using Eigen::MatrixXd;
@@ -64,21 +64,6 @@ int main(){
   testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
   s.addSolid(&testSolid);*/
   
-  // cup
-  /*Vector2d a(-1.5,1.5);
-  Vector2d b(-1.5,-0.5);
-  Vector2d c(1.5,-0.5);
-  Vector2d d(1.5,1.5);
-  WallObject w1(dt, b, a);
-  WallObject w2(dt, c, b);
-  WallObject w3(dt, d, c);
-  w1.setVelFunc([](double t)->Vector2d{ return Vector2d(0.0,0.0); });
-  w2.setVelFunc([](double t)->Vector2d{ return Vector2d(0.0,0.0); });
-  w3.setVelFunc([](double t)->Vector2d{ return Vector2d(0.0,0.0); });
-  s.addWall(&w1);
-  s.addWall(&w2);
-  s.addWall(&w3);*/
-
   // cup using solids
   /*std::vector<Vector2d> cupLeft = {
     Vector2d(-1.5,1.5),
@@ -189,7 +174,7 @@ int main(){
   // moving surface
   /*Vector2d a(-2.0,0);
   Vector2d b(2.0,0);
-  WallObject w(dt, b, a);
+  Object w(dt, b, a);
   w.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
   s.addWall(&w);*/
   
@@ -213,7 +198,34 @@ int main(){
     }
   }
   std::cout << std::endl;
-  
+
+  // quick and dirty rigid body tests
+  std::vector<Vector2d> squareverts = {
+    Vector2d(0,0),
+    Vector2d(1,0),
+    Vector2d(1,1),
+    Vector2d(0,1),
+    /*Vector2d(0.5,0.5),
+    Vector2d(0.8,0.5),
+    Vector2d(0.8,0.2),
+    Vector2d(0.5,0.2)*/
+  };
+  std::vector<Vector2i> squarefaces = {
+    Vector2i(0,1),
+    Vector2i(1,2),
+    Vector2i(2,3),
+    Vector2i(3,0),
+    /*Vector2i(4,5),
+    Vector2i(5,6),
+    Vector2i(6,7),
+    Vector2i(7,4)*/
+  };
+  /*
+  RigidBody testRB(squareverts,squarefaces);
+  std::cout<<"area: "<<testRB.area<<std::endl;
+  std::cout<<"COM: "<<testRB.com[0]<<","<<testRB.com[1]<<std::endl;
+  std::cout<<"MOI: "<<testRB.moi<<std::endl;
+  */
 
   // quick and dirty solid mesh test
   /*

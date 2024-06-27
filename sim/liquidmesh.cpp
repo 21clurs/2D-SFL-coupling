@@ -11,6 +11,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_solid = std::vector<bool>(verts.size(), false);
     is_triple = std::vector<bool>(verts.size(), false);
 
+    is_corner = std::vector<bool>(verts.size(), false);
+
     minFaceLength = 0.7*calc_avg_face_length();
     maxFaceLength = 1.3*calc_avg_face_length();
 }
@@ -25,6 +27,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_solid = std::vector<bool>(verts.size(), false);
     is_triple = std::vector<bool>(verts.size(), false);
 
+    is_corner = std::vector<bool>(verts.size(), false);
+
     minFaceLength = 0.7*calc_avg_face_length();
     maxFaceLength = 1.4*calc_avg_face_length();
 }
@@ -35,6 +39,13 @@ void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, 
     is_triple = triple;
 }
 
+void LiquidMesh::set_boundaries_for_vertex(int i, bool air, bool solid, bool triple, bool corner){
+    is_air[i] = air;
+    is_solid[i] = solid;
+    is_triple[i] = triple;
+
+    is_corner[i] = corner;
+}
 
 void LiquidMesh::remesh(){
     edge_split();
@@ -50,8 +61,8 @@ void LiquidMesh::laplacian_smoothing()
 
     Eigen::Vector2d n_i;
     for (size_t i=0; i<verts.size(); i++){
-        // we do not smooth/move triple points
-        if (is_triple[i]){
+        // we do not smooth/move triple points or points at corners
+        if (is_triple[i]|| is_corner[i]){
             C[i] = verts[i];
             proj[i] = Eigen::Vector2d(0.0, 0.0);
         }
@@ -84,6 +95,8 @@ void LiquidMesh::edge_collapse(){
             if (faces_to_delete[endpt_a_face] || faces_to_delete[endpt_b_face] ){
                 continue;
                 // maybe not the best logic, but maybe reasonable?
+            } else if (is_corner[endpt_a_ind] || is_corner[endpt_b_ind] ){
+                continue;
             }
 
             //std::cout<<"WAHH"<<std::endl;
@@ -162,7 +175,10 @@ void LiquidMesh::edge_collapse(){
         std::vector<bool> is_triple_remeshed;
         is_triple_remeshed.reserve(n_old-n_collapse);
 
-        std::unordered_map<size_t, int> verts_map; // maps old
+        std::vector<bool> is_corner_remeshed;
+        is_corner_remeshed.reserve(n_old-n_collapse);
+
+        std::unordered_map<size_t, int> verts_map; // maps old to new verts
 
         for(size_t i=0; i<n_old; i++){
             if (!verts_to_delete[i]){
@@ -174,6 +190,8 @@ void LiquidMesh::edge_collapse(){
                 is_air_remeshed.push_back(is_air[i]);
                 is_solid_remeshed.push_back(is_solid[i]);
                 is_triple_remeshed.push_back(is_triple[i]);
+
+                is_corner_remeshed.push_back(is_corner[i]);
             } else{
                 verts_map[i] = -1;
             }
@@ -201,6 +219,8 @@ void LiquidMesh::edge_collapse(){
         is_air = is_air_remeshed;
         is_solid = is_solid_remeshed;
         is_triple = is_triple_remeshed;
+
+        is_corner = is_corner_remeshed;
     }
     assert(faces.size() == n_old - n_collapse);
     assert(verts.size() == n_old - n_collapse);
@@ -210,6 +230,8 @@ void LiquidMesh::edge_collapse(){
     assert(is_air.size() == verts.size());
     assert(is_solid.size() == verts.size());
     assert(is_triple.size() == verts.size());
+
+    assert(is_corner.size() == verts.size());
 
     update_neighbor_face_vecs();
     
@@ -238,10 +260,14 @@ void LiquidMesh::edge_split(){
                 is_air.push_back(false);
                 is_solid.push_back(true);
                 is_triple.push_back(false);
+
+                is_corner.push_back(false);
             } else{
                 is_air.push_back(true);
                 is_solid.push_back(false);
                 is_triple.push_back(false);
+
+                is_corner.push_back(false);
             }
         }
     }
@@ -253,6 +279,8 @@ void LiquidMesh::edge_split(){
     assert(is_air.size() == verts.size());
     assert(is_solid.size() == verts.size());
     assert(is_triple.size() == verts.size());
+
+    assert(is_corner.size() == verts.size());
     
     update_neighbor_face_vecs();
 }
@@ -272,6 +300,7 @@ void LiquidMesh::update_triple_points(){
         if (is_solid[i] && (is_air[next_neighbor_index(i)] || is_air[prev_neighbor_index(i)])){
             is_triple[i] = true;
             is_solid[i] = false;
+            is_air[i] = false;
         }
         assert((is_solid[i] ^ is_air[i] ^ is_triple[i]) && (is_solid[i] + is_air[i] + is_triple[i]==1));
     }
@@ -281,38 +310,6 @@ void LiquidMesh::reset_boundary_types(){
     is_air = std::vector<bool>(is_air.size(), true);
     is_solid = std::vector<bool>(is_solid.size(), false);
     is_triple = std::vector<bool>(is_triple.size(), false);
-}
 
-void LiquidMesh::collide_with_wall(WallObject& w){
-    for(size_t i=0; i<verts.size(); i++){
-        //std::cout<<"og: "<<verts[i]<<std::endl;
-        if(w.checkCollisionAndSnap(verts[i]) == true){
-
-            //std::cout<<"snapped: "<<verts[i]<<std::endl;
-            vels_solid[i] = w.calcEffectiveVel();
-            
-            is_solid[i] = true; 
-            is_air[i] = false;
-            is_triple[i] = false;
-
-            // vels[i] = w.calcEffectiveVel(); //?
-        }
-    }
-}
-
-void LiquidMesh::collide_with_solid(SolidMesh& s){
-    for(size_t i=0; i<verts.size(); i++){
-        //std::cout<<"og: "<<verts[i]<<std::endl;
-        if(s.checkCollisionAndSnap(verts[i]) == true){
-
-            //std::cout<<"snapped: "<<verts[i]<<std::endl;
-            vels_solid[i] = s.v_effective;
-            
-            is_solid[i] = true; 
-            is_air[i] = false;
-            is_triple[i] = false;
-
-            //vels[i] =  s.v_effective; //?
-        }
-    }
+    is_corner = std::vector<bool>(is_corner.size(), false);
 }
