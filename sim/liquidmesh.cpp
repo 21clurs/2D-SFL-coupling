@@ -13,8 +13,7 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
 
     is_corner = std::vector<bool>(verts.size(), false);
 
-    minFaceLength = 0.7*calc_avg_face_length();
-    maxFaceLength = 1.3*calc_avg_face_length();
+    reset_face_length_limits();
 }
 
 LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) :
@@ -29,8 +28,7 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
 
     is_corner = std::vector<bool>(verts.size(), false);
 
-    minFaceLength = 0.7*calc_avg_face_length();
-    maxFaceLength = 1.4*calc_avg_face_length();
+    reset_face_length_limits();
 }
 
 void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple){
@@ -312,4 +310,8 @@ void LiquidMesh::reset_boundary_types(){
     is_triple = std::vector<bool>(is_triple.size(), false);
 
     is_corner = std::vector<bool>(is_corner.size(), false);
+}
+void LiquidMesh::reset_face_length_limits(){
+    minFaceLength = 0.7*calc_avg_face_length();
+    maxFaceLength = 1.3*calc_avg_face_length();
 }

@@ -26,6 +26,7 @@ class LiquidMesh : public Mesh
         void remesh();
 
         void reset_boundary_types();
+        void reset_face_length_limits();
 
         void laplacian_smoothing();
         void edge_collapse();

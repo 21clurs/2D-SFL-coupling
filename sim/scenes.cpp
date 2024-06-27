@@ -62,12 +62,14 @@ void Scenes::scene(Sim &sim, const std::string & scenename){
 
     std::vector<Eigen::Vector2d> v;
     std::vector<Eigen::Vector2i> f;
+    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
 
     if (scenename == "circle"){
 
         double r = SimOptions::doubleValue("radius");
 
         gen_ellipse(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+        
 
     } else if (scenename == "rectangle"){
         double w = SimOptions::doubleValue("width");
@@ -129,8 +131,16 @@ void Scenes::scene(Sim &sim, const std::string & scenename){
 
     }
 
-    sim.m.verts.resize(v.size()); for (size_t i = 0; i < v.size(); i++) sim.m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
-    sim.m.faces.resize(f.size()); for (size_t i = 0; i < f.size(); i++) sim.m.faces[i] = Eigen::Vector2d (f[i][0], f[i][1]);
+    sim.m.verts.resize(v.size());
+    for (size_t i = 0; i < v.size(); i++) 
+        sim.m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
+    sim.m.faces.resize(f.size()); 
+    for (size_t i = 0; i < f.size(); i++) 
+        sim.m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
+    sim.m.vels.resize(u.size());
+    for (size_t i = 0; i < u.size(); i++) 
+        sim.m.vels[i] = Eigen::Vector2d (u[i][0], u[i][1]);
+    sim.m.reset_face_length_limits();
 
 }
 

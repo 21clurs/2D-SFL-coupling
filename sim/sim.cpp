@@ -17,7 +17,7 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     sigma_SL(1.0),
     sigma_SA(1.0),
     rho(1.0),
-    gravity(Eigen::Vector2d({0.0, -5.0}))
+    gravity(Eigen::Vector2d({0.0, -0.0}))
 {
 }
 
