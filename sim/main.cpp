@@ -16,7 +16,7 @@ using Eigen::Vector2i;
 
 int main(){
   float dt = 1.0/240.0;
-  int n = 128; // check back later why 10 on a rect is funky
+  int n = 32; // check back later why 10 on a rect is funky
 
   std::vector<Vector2d> verts(n);
   std::vector<Vector2i> faces(n);
