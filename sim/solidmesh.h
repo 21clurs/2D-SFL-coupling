@@ -27,7 +27,5 @@ class SolidMesh : public Mesh
         double epsilon = 0.02;
 
         std::function<Eigen::Vector2d(double)> vel_func;
-        
-        double windingNumber(const Eigen::Vector2d& x);
 };
 #endif

@@ -313,3 +313,48 @@ void LiquidMesh::reset_boundary_types(){
 
     is_corner = std::vector<bool>(is_corner.size(), false);
 }
+
+// returns the closest distance to the liquid mesh
+// returns a positive number if inside the mesh
+// returns a negative number if outside the mesh
+double LiquidMesh::signed_min_dist(Eigen::Vector2d x){
+    double min_d;
+    Eigen::Vector2d nearest_pt;
+
+    // iterate through faces
+    for (size_t i = 0; i<faces.size(); i++){
+
+        // retrieve endpoints of current face, these should be oriented
+        Eigen::Vector2d ptA = verts[faces[i][0]];
+        Eigen::Vector2d ptB = verts[faces[i][1]];
+
+        // finding closest point on the line defined by the face to curr_pt
+        Eigen::Vector2d u = ptB-ptA;        //std::cout<<"u: "<<u.x()<<","<<u.y()<<std::endl;
+        Eigen::Vector2d v = x-ptA;    //std::cout<<"v: "<<v.x()<<","<<v.y()<<std::endl;
+        double t = (u.dot(v)/u.dot(u));     //std::cout<<"t: "<<t<<std::endl;
+        // finding closest point
+        Eigen::Vector2d proj_pt;
+        if (t>=0 && t<=1){ 
+            // closest point is within the segment length
+            proj_pt = (1-t)*ptA + t*ptB;
+        } else{ 
+            // if outside the segment length, project to nearest endpoint
+            double g0 = (ptA - x).squaredNorm();
+            double g1 = (ptB - x).squaredNorm();
+            proj_pt = g0 < g1 ? ptA : ptB;
+        }
+    
+        // logic to get minimal distance to a segment in the SolidMesh
+        if (i==0 || (proj_pt-x).norm()<=abs(min_d)){
+            min_d = (proj_pt-x).norm();
+            nearest_pt = proj_pt;
+        }
+    }
+
+    // if inside
+    if (windingNumber(x)>1.0e-8){
+        return abs(min_d);
+    } else{
+        return -1*abs(min_d);
+    }
+}

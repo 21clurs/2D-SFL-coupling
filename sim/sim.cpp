@@ -21,7 +21,7 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
 {
     p = Eigen::VectorXd::Zero(n);
     dpdn = Eigen::VectorXd::Zero(n);
-    markerparticles = {Eigen::Vector2d(-1,-0.25)};
+    markerparticles = {};
 }
 
 void Sim::addSolid(SolidMesh* solid){
@@ -83,6 +83,13 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     for (size_t i=0; i<markerparticles.size(); i++){
         file<<"p "<<markerparticles[i][0]<<" "<<markerparticles[i][1]<<std::endl;
     }
+    file<<std::endl;
+
+    // marker particle velocities
+    /*for (size_t i=0; i<markerparticles.size(); i++){
+        Eigen::Vector2d tmp = HHD_FD(markerparticles[i], 0.01);
+        file<<"pv "<<tmp[0]<<" "<<tmp[1]<<std::endl;
+    }*/
     file.close();
     
 
@@ -182,7 +189,7 @@ void Sim::step_advect(double t){
     }
     // "advect" the marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
-        markerparticles[i] = markerparticles[i] + eval_interior_vel(markerparticles[i])*dt;
+        markerparticles[i] = markerparticles[i] + HHD_FD(markerparticles[i],0.001)*dt;
     }
 }
 
@@ -242,7 +249,7 @@ void Sim::step_HHD(){
 
             double jacobian = 1.0/2.0; // a little sketchy here but ok lets see...
 
-            // iterate over quadrature points
+            // iterate over quadrature points on the adjacent faces
             for (size_t qi=0; qi<quadrature_DE.size(); qi++){
                 double qik = quadrature_DE[qi].x();
                 double qiw = quadrature_DE[qi].y();
@@ -778,48 +785,85 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     }
 }
 
-Eigen::Vector2d Sim::eval_interior_vel(Eigen::Vector2d x){
-    // evaluating BIE (2.20) from W.S. Hall BEM book at given point x
-
-    double delta = 0.001;
-    std::vector<Eigen::Vector2d> points = {
-        Eigen::Vector2d(x.x()-delta, x.y()), 
-        Eigen::Vector2d(x.x()+delta, x.y()), 
-        Eigen::Vector2d(x.x(), x.y()-delta), 
-        Eigen::Vector2d(x.x(), x.y()+delta)
+Eigen::Vector2d Sim::HHD_FD(Eigen::Vector2d x, double delta){
+    // gonna do HHD here again yay to evaluate/approximate velocity at x
+    // except no need to worry about singularities???
+    std::vector<Eigen::Vector2d> x_deltas = {
+        Eigen::Vector2d(x.x() + delta, x.y()),
+        Eigen::Vector2d(x.x() - delta, x.y()),
+        Eigen::Vector2d(x.x(), x.y() + delta),
+        Eigen::Vector2d(x.x(), x.y() - delta)
     };
-    Eigen::Vector4d p_vals;
-
-    for (size_t j = 0; j<points.size(); j++){
-        double val_p = 0;
-        // will be approximating with a Gauss Quad on each face
-        const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
-        // iterate through faces
-        for (size_t fi=0; fi<m.faces.size(); fi++){
-            Eigen::Vector2i endpts = m.verts_from_face(fi); // endpoint indices
-            Eigen::Vector2d n_y = m.calc_face_normal(fi);
-            double val_fi = 0;
-            // iterate through quadrature points
-            for (size_t qi = 0; qi < quadrature_GQ.size(); qi++){
-                // quadrature points and weights
-                double qik = quadrature_GQ[qi].x();
-                double qiw = quadrature_GQ[qi].y();
-
-                Eigen::Vector2d yk = lin_interp(m.verts[endpts[0]], m.verts[endpts[1]], qik);
-                double p_yk = M_1(qik)*p[endpts[0]] + M_2(qik)*p[endpts[1]];
-                double dpdn_yk = M_1(qik)*dpdn[endpts[0]] + M_2(qik)*dpdn[endpts[1]];
-                
-                val_fi += qiw * ( p_yk*BoundaryIntegral::dGdnx(yk, x, n_y) - dpdn_yk*BoundaryIntegral::G(yk,x) );
-            }
-            val_p += val_fi * 0.5 * m.face_length(fi);
-        }
-        p_vals[j] = (1/(2*M_PI)) * val_p;
+    std::vector<double> phi_gammas(x_deltas.size(),0.0);
+    std::vector<double> A_gammas(x_deltas.size(),0.0);
+    for(size_t i=0; i<x_deltas.size(); i++){
+        phi_gammas[i] = BIE_Phi(x_deltas[i]);
+        A_gammas[i] = BIE_A(x_deltas[i]);
     }
-    double v_x = (p_vals[1]-p_vals[0])/(2*delta);
-    double v_y = (p_vals[3]-p_vals[2])/(2*delta);
-    std::cout<<p_vals<<std::endl;
+    Eigen::Vector2d gradPhi_FD(
+        (phi_gammas[0]-phi_gammas[1])/(2*delta),
+        (phi_gammas[2]-phi_gammas[3])/(2*delta)
+    );
+    Eigen::Vector2d curlA_FD(
+        (A_gammas[2]-A_gammas[3])/(2*delta),
+        -(A_gammas[0]-A_gammas[1])/(2*delta)
+    );
+    
+    return -(curlA_FD - gradPhi_FD); //idk why this sign needs to be flipped here???
+}
 
-    return Eigen::Vector2d(v_x, v_y);
+double Sim::BIE_Phi(Eigen::Vector2d x){
+    // evaluating Phi_Gamma at point x
+    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
+    double jacobian = 0.5;
+
+    double phi = 0;
+    for (size_t i=0; i<m.faces.size(); i++){
+        double f_len = m.face_length(i);
+        Eigen::Vector2d n_y = m.calc_face_normal(i);
+
+        double phi_face = 0;
+        for (size_t qi = 0; qi<quadrature_GQ.size(); qi++){
+            double qik = quadrature_GQ[qi].x();
+            double qiw = quadrature_GQ[qi].y();
+            
+            Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(i)[0]], m.verts[m.verts_from_face(i)[1]], qik);
+            Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(i)[0]], m.vels[m.verts_from_face(i)[1]], qik);
+
+            double G = BoundaryIntegral::G(x,y);
+
+            phi_face += qiw * (n_y.dot(v_y)) * G;
+        }
+        phi += phi_face * (jacobian * f_len);
+    }
+    return phi;
+}
+
+double Sim::BIE_A(Eigen::Vector2d x){
+    // evaluating A_Gamma at point x
+    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
+    double jacobian = 0.5;
+
+    double A = 0;
+    for (size_t i=0; i<m.faces.size(); i++){
+        double f_len = m.face_length(i);
+        Eigen::Vector2d n_y = m.calc_face_normal(i);
+
+        double A_face = 0;
+        for (size_t qi = 0; qi<quadrature_GQ.size(); qi++){
+            double qik = quadrature_GQ[qi].x();
+            double qiw = quadrature_GQ[qi].y();
+            
+            Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(i)[0]], m.verts[m.verts_from_face(i)[1]], qik);
+            Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(i)[0]], m.vels[m.verts_from_face(i)[1]], qik);
+
+            double G = BoundaryIntegral::G(x,y);
+
+            A_face += qiw * (cross2d(n_y,v_y)) * G;
+        }
+        A += A_face * (jacobian * f_len);
+    }
+    return A;
 }
 
 Eigen::Vector2d Sim::lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q){
@@ -856,4 +900,25 @@ void Sim::collide(){
         solids[i]->collideAndSnap(m);
     }
     m.update_triple_points();
+}
+void Sim::genMarkerParticles(double l, double r, double b, double t, double spacing){
+    double min_dist_to_liquid_allowed = 0.05;
+
+    std::vector<Eigen::Vector2d> tmpMarkers;
+    tmpMarkers.reserve(int(((r-l)/spacing)*((t-b)/spacing)));
+
+    for (double x=l; x<=r; x+=spacing){
+        for (double y=b; y<=t; y+=spacing){
+            Eigen::Vector2d marker(x,y);
+            double dist_to_liquid = m.signed_min_dist(marker);
+            if ( dist_to_liquid>min_dist_to_liquid_allowed){
+                tmpMarkers.push_back(marker);
+            }
+        }
+    }
+
+    markerparticles.resize(tmpMarkers.size());
+    for(size_t i = 0; i<tmpMarkers.size(); i++){
+        markerparticles[i] = tmpMarkers[i];
+    }
 }

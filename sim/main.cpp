@@ -25,6 +25,13 @@ int main(){
   LiquidMesh mesh(verts,faces,vels);
 
   Sim s(mesh, n, dt);
+  s.genMarkerParticles(-1.5, 1.5, -0.5, 0, 0.05);
+  /*
+  for (size_t i=0; i<s.markerparticles.size(); i++){
+    Eigen::Vector2d v = s.HHD_FD(s.markerparticles[i],0.01);
+    std::cout<<"("<<s.markerparticles[i].x()<<","<<s.markerparticles[i].y()<<"): ["<<v.x()<<","<<v.y()<<"]"<<std::endl;
+  }
+  */
   
   /*
   std::cout<<"CIRCLE HHD"<<std::endl;

@@ -25,6 +25,7 @@ for frame in range(start, end):
     uList = [] # velocities
     vColorList = [] # vertice colours
     mpList = [] # marker particles
+    #mpvList = [] # marker particle velocities
 
     if os.path.isfile(outdir+str(frame)+".txt"):
         with open(outdir+str(frame)+".txt","r") as curr_frame_file:
@@ -55,6 +56,8 @@ for frame in range(start, end):
                     uList.append([ float(r[1]), float(r[2])])
                 elif r[0] == 'p':
                     mpList.append([ float(r[1]), float(r[2])])
+                #elif r[0] == 'pv':
+                    #mpvList.append([ float(r[1]), float(r[2])])
 
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
@@ -64,6 +67,7 @@ for frame in range(start, end):
         vt = np.array(vtList)
         u = np.array(uList)
         mp = np.array(mpList)
+        #mpv = np.array(mpvList)
 
         for face in f:
             [indexStart, indexEnd] = face
@@ -83,7 +87,9 @@ for frame in range(start, end):
         if "-showmarkers" in sys.argv:
             for j in range(len(mp)):
                 particle = mp[j]
-                plt.plot(particle[0], particle[1], marker=".",color='r')
+                #vel = mpv[j]
+                plt.plot(particle[0], particle[1], marker=".", markersize=1,color='r')
+                #plt.arrow(particle[0], particle[1], vel[0]*0.5, vel[1]*0.5, head_width=.05)
 
         # set axes
         ax = plt.gca()
