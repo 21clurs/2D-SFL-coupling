@@ -314,7 +314,7 @@ void LiquidMesh::reset_boundary_types(){
 void LiquidMesh::reset_face_length_limits(){
     minFaceLength = 0.7*calc_avg_face_length();
     maxFaceLength = 1.3*calc_avg_face_length();
-
+}
 // returns the closest distance to the liquid mesh
 // returns a positive number if inside the mesh
 // returns a negative number if outside the mesh
