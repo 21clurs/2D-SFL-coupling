@@ -189,7 +189,7 @@ void Sim::step_advect(double t){
     }
     // "advect" the marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
-        markerparticles[i] = markerparticles[i] + HHD_FD(markerparticles[i],0.001)*dt;
+        markerparticles[i] = markerparticles[i] + HHD_FD(markerparticles[i],0.0001)*dt;
     }
 }
 

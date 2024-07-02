@@ -25,7 +25,6 @@ int main(){
   LiquidMesh mesh(verts,faces,vels);
 
   Sim s(mesh, n, dt);
-  s.genMarkerParticles(-1.5, 1.5, -0.5, 0, 0.05);
   /*
   for (size_t i=0; i<s.markerparticles.size(); i++){
     Eigen::Vector2d v = s.HHD_FD(s.markerparticles[i],0.01);
@@ -187,6 +186,7 @@ int main(){
   
   
   s.collide(); // snap everything/set boundary flags properly, etc.
+  s.genMarkerParticles(-1.5, 1.5, -0.5, 0, 0.05); // generate these after collision
   int num_frames = 1000;
   for (int i=0; i<num_frames; i++){
     // sim stuff
