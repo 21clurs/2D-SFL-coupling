@@ -31,6 +31,8 @@ class LiquidMesh : public Mesh
         void laplacian_smoothing();
         void edge_collapse();
         void edge_split();
+
+        double signed_min_dist(Eigen::Vector2d x);
     private:
         std::vector<bool> is_air;
         std::vector<bool> is_solid;

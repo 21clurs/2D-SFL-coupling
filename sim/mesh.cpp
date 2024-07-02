@@ -181,3 +181,13 @@ double Mesh::turning_angle(Eigen::Vector2d a, Eigen::Vector2d b){
 
     return atan2(crossprod,dotprod);
 }
+
+double Mesh::windingNumber(const Eigen::Vector2d& p){
+    double w = 0;
+    for (size_t i=0; i<faces.size(); i++){
+        Eigen::Vector2d a = verts[faces[i][0]] - p;
+        Eigen::Vector2d b = verts[faces[i][1]] - p;
+        w += atan2( (a.x()*b.y()-a.y()*b.x()) , (a.dot(b)) );
+    }
+    return w/(2*M_PI);
+}

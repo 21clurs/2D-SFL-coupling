@@ -30,6 +30,10 @@ class Sim
         std::vector<Eigen::Vector2d>& get_vels(){ return m.vels; }
         
         void collide();
+
+        void genMarkerParticles(double l, double r, double b, double t, double spacing);
+        Eigen::Vector2d HHD_FD(Eigen::Vector2d x, double delta); 
+        std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
     private:
         int n;
         float dt;
@@ -42,6 +46,14 @@ class Sim
 
         // solid objects in the sim
         std::vector<SolidMesh*> solids;
+
+        // marker particles
+        double BIE_Phi(Eigen::Vector2d x);
+        double BIE_A(Eigen::Vector2d x);
+
+        // holds p and dpdn from the most current BEM step-- necessary to evaluate marker particles
+        Eigen::VectorXd p;
+        Eigen::VectorXd dpdn;
 
         void remesh();
 

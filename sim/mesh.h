@@ -47,6 +47,7 @@ class Mesh
         double signed_mean_curvature(const int vertIndex);
         double solid_angle(const int vertIndex);
 
+        double windingNumber(const Eigen::Vector2d& x);
     protected:
         void update_neighbor_face_vecs();
         void swap_face_vertices(const int faceIndex);

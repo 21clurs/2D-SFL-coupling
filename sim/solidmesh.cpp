@@ -138,13 +138,3 @@ void SolidMesh::advectFE(double curr_t, double dt){
     }
     v_effective = vel_func(curr_t);//*dt;
 }
-
-double SolidMesh::windingNumber(const Eigen::Vector2d& p){
-    double w = 0;
-    for (size_t i=0; i<faces.size(); i++){
-        Eigen::Vector2d a = verts[faces[i][0]] - p;
-        Eigen::Vector2d b = verts[faces[i][1]] - p;
-        w += atan2( (a.x()*b.y()-a.y()*b.x()) , (a.dot(b)) );
-    }
-    return w/(2*M_PI);
-}

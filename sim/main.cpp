@@ -23,6 +23,18 @@ int main(){
   std::vector<Vector2d> vels(n);
   LiquidMesh mesh(verts,faces,vels);
   Sim s(mesh, n, dt);
+  /*
+  for (size_t i=0; i<s.markerparticles.size(); i++){
+    Eigen::Vector2d v = s.HHD_FD(s.markerparticles[i],0.01);
+    std::cout<<"("<<s.markerparticles[i].x()<<","<<s.markerparticles[i].y()<<"): ["<<v.x()<<","<<v.y()<<"]"<<std::endl;
+  }
+  */
+  
+  /*
+  std::cout<<"CIRCLE HHD"<<std::endl;
+  TestingHelpers::testHHDErrorTables("circle","constant");
+  TestingHelpers::testHHDErrorTables("circle","harmonic_1");
+  TestingHelpers::testHHDErrorTables("circle","harmonic_3");
 
   Scenes::scene(s, "oscillation_test");
 /*
@@ -73,6 +85,7 @@ int main(){
   s.addSolid(&testSolid);
 */
   s.collide(); // snap everything/set boundary flags properly, etc.
+  s.genMarkerParticles(-1.5, 1.5, -0.5, 0, 0.05); // generate these after collision
   int num_frames = 1000;
   for (int i=0; i<num_frames; i++){
     // sim stuff
