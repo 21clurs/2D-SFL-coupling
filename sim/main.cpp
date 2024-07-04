@@ -26,20 +26,6 @@ int main(int argc, char **argv){
   string inputFileName = argv[1];
   Sim::setAndLoadSimOptions(inputFileName);
 
-
-
-
-  float dt = 1.0/240.0;
-  int n = 128; // check back later why 10 on a rect is funky
-
-  vector<Vector2d> verts(n);
-  vector<Vector2i> faces(n);
-  TestingHelpers::genShape("rectangle",n,verts,faces);
-  vector<Vector2d> vels(n);
-  TestingHelpers::generateVField("harmonic_3",n,verts,vels);
-  LiquidMesh mesh(verts,faces,vels);
-
-  Sim s(mesh, n, dt);
   Sim s_noparam;
   s_noparam.run();
   /*

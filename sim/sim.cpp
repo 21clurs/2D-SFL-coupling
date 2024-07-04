@@ -37,9 +37,13 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     SimOptions::addBooleanOption ("marker-particles-on", false);
 
     // scene/original liquid mesh shape specific parameters
-    SimOptions::addDoubleOption ("radius", 1); // circle
-    SimOptions::addDoubleOption ("width", 1); // rectangle
-    SimOptions::addDoubleOption ("height", 1); // rectangle
+    SimOptions::addDoubleOption ("radius", 1);  // circle, semicircle
+    SimOptions::addDoubleOption ("width", 1);   // rectangle
+    SimOptions::addDoubleOption ("height", 1);  // rectangle
+    SimOptions::addDoubleOption ("radius_outer", 1);    // donut
+    SimOptions::addDoubleOption ("radius_inner", 0.5);  // donut
+    SimOptions::addDoubleOption ("size_outer", 2);    // square donut
+    SimOptions::addDoubleOption ("size_inner", 0.5);  // square donut
     
     // load sim options file
     SimOptions::loadSimOptions(infileName);

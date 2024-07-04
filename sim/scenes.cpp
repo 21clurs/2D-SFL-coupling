@@ -55,10 +55,127 @@ namespace {
             f[i] = Eigen::Vector2i(i,(i+1)%n);
         }
     }
+    void gen_semicircle_v(int n, const Eigen::Vector2d& center, double a, double b, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        float theta = 2*M_PI/n;
+
+        v.resize(n);
+        f.resize(n);
+
+        for (size_t i=0; i<n; i++){
+            v[i].x() = a*cos(theta*i - M_PI/2) + center.x();
+            v[i].y() = b*sin(theta*i - M_PI/2) + center.y();
+
+            f[i][0] = i;
+            f[i][1] = (i+1)%n;
+        }
+
+        double delta = 2*b/(n/2);
+        for (size_t i=0; i<n/2; i++){
+            v[i+n/2].x() = 0;
+            v[i+n/2].y() = b - delta*i;
+        }
+    }
+    void gen_semicircle_h(int n, const Eigen::Vector2d& center, double a, double b, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        float theta = 2*M_PI/n;
+
+        v.resize(n);
+        f.resize(n);
+
+        for (size_t i=0; i<n; i++){
+            v[i].x() = a*cos(theta*i) + center.x();
+            v[i].y() = b*sin(theta*i) + center.y();
+
+            f[i][0] = i;
+            f[i][1] = (i+1)%n;
+        }
+
+        double delta = 2*a/(n/2);
+        for (size_t i=0; i<n/2; i++){
+            v[i+n/2].x() = -a + delta*i;
+            v[i+n/2].y() = 0;
+        }
+    }
+    void gen_donut(int n, const Eigen::Vector2d& center, double r_inner, double r_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        v.resize(n);
+        f.resize(n);
+        
+        double ratio = r_outer/r_inner;
+
+        int n_inner = (n/(ratio+1))+1;
+        int n_outer = n-n_inner;
+
+        float theta_inner = 2*M_PI/n_inner;
+        for (size_t i=0; i<n_inner; i++){
+            v[i].x() = r_inner*cos(theta_inner*i) + center.x();
+            v[i].y() = r_inner*sin(theta_inner*i) + center.y();
+
+            f[i].x() = (i+1)%n_inner;
+            f[i].y() = i;
+        }
+
+        float theta_outer = 2*M_PI/n_outer;
+        for (size_t i=0; i<n_outer; i++){
+            v[n_inner+i].x() = r_outer*cos(theta_outer*i) + center.x();
+            v[n_inner+i].y() = r_outer*sin(theta_outer*i) + center.y();
+
+            f[n_inner+i].x() = n_inner + i;
+            f[n_inner+i].y() = n_inner + (i+1)%n_outer;
+        }
+    }
+    void gen_square_donut(int n, const Eigen::Vector2d& center, double sideLength_inner, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        double ratio = sideLength_outer/sideLength_inner;
+
+        int n_inner = n/(ratio+1);
+        int n_outer = n-n_inner;
+
+        assert(((void)"n_inner is a multiple of 4 when generating a square donut", n_inner%4==0));
+        
+        int nPerSide_inner = n_inner/4;
+        float delta_inner = sideLength_inner/nPerSide_inner;
+
+        int nPerSide_outer = n_outer/4;
+        float delta_outer = sideLength_outer/nPerSide_outer;
+
+        // populate outer square
+        for(size_t i=0; i<nPerSide_outer; i++){
+            // bottom
+            v[i] = Eigen::Vector2d((-sideLength_outer/2) + i*delta_outer, -sideLength_outer/2);
+            // right
+            v[nPerSide_outer+i] = Eigen::Vector2d(sideLength_outer/2, (-sideLength_outer/2) + i*delta_outer);
+            // top
+            v[2*nPerSide_outer+i] = Eigen::Vector2d((sideLength_outer/2)-i*delta_outer, sideLength_outer/2);
+            // left
+            v[3*nPerSide_outer+i] = Eigen::Vector2d(-sideLength_outer/2, (sideLength_outer/2)-i*delta_outer);
+        }
+        for(size_t i=0; i<n_outer; i++)
+            f[i] = Eigen::Vector2i(i,(i+1)%n_outer);
+
+        // populate inner square
+        for(size_t i=0; i<nPerSide_inner; i++){
+            // bottom
+            v[n_outer + i] = Eigen::Vector2d((-sideLength_inner/2) + i*delta_inner, -sideLength_inner/2);
+            // right
+            v[n_outer + nPerSide_inner+i] = Eigen::Vector2d(sideLength_inner/2, (-sideLength_inner/2) + i*delta_inner);
+            // top
+            v[n_outer + 2*nPerSide_inner+i] = Eigen::Vector2d((sideLength_inner/2)-i*delta_inner, sideLength_inner/2);
+            // left
+            v[n_outer + 3*nPerSide_inner+i] = Eigen::Vector2d(-sideLength_inner/2, (sideLength_inner/2)-i*delta_inner);
+        }
+        for(size_t i=0; i<n_inner; i++)
+            f[n_outer + i] = Eigen::Vector2i(n_outer + (i+1)%n_inner, n_outer + i);
+    }
 }
 
-void Scenes::scene(Sim * const &sim, const std::string & scenename){
+void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::string & initialvelocity){
     int N = sim->n;
+    sim->m.resize_mesh(N);
+
+    setupSceneShape(sim->m, scenename);
+    setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
+}
+
+void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
+    int N = m.verts.size();
 
     std::vector<Eigen::Vector2d> v(N, Eigen::Vector2d(0,0));
     std::vector<Eigen::Vector2i> f(N, Eigen::Vector2i(0,0));
@@ -108,23 +225,35 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename){
 
             f[i] = Eigen::Vector2i(i,(i+1)%N);
         }
-    } else if (scenename == "droplet_on_surface_horizontal") {
+    } else if (scenename == "semicircle_horizontal") {
         double r = SimOptions::doubleValue("radius");
 
-    } else if (scenename == "droplet_on_surface_vertical"){
+        gen_semicircle_h(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+
+    } else if (scenename == "semicircle_vertical"){
         double r = SimOptions::doubleValue("radius");
+
+        gen_semicircle_v(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
 
     } else if (scenename == "donut"){
         double r_outer = SimOptions::doubleValue("radius_outer");
         double r_inner = SimOptions::doubleValue("radius_inner");
 
-    } else if (scenename == "donut_square"){
+        gen_donut(N, Eigen::Vector2d(0.0,0.0), r_inner, r_outer, v, f);
+
+    } else if (scenename == "square_donut"){
         double d_outer = SimOptions::doubleValue("size_outer");
         double d_inner = SimOptions::doubleValue("size_inner");
+
+        std::cout<<d_outer<<","<<d_inner<<std::endl;
+
+        gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
 
     } else if (scenename == "cup"){
         double w = SimOptions::doubleValue("width");
         double h = SimOptions::doubleValue("height");
+        
+        // TODO
 
     } else if (scenename == "cup_with_block"){
         double w_cup = SimOptions::doubleValue("cup_width");
@@ -132,38 +261,35 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename){
         double w_block = SimOptions::doubleValue("block_width");
         double h_block = SimOptions::doubleValue("block_height");
 
-    } else {
+        // TODO
 
+    } else {
+        std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
+        return;
     }
 
-    sim->m.resize_mesh(v.size());
+    //sim->m.resize_mesh(v.size());
 
     for (size_t i = 0; i < v.size(); i++) 
-        sim->m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
+        m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
     for (size_t i = 0; i < f.size(); i++) 
-        sim->m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
-    for (size_t i = 0; i < u.size(); i++) 
-        sim->m.vels[i] = Eigen::Vector2d (u[i][0], u[i][1]);  
+        m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
 
+    m.update_neighbor_face_vecs();
+    m.reset_face_length_limits();
+    
     for (size_t i = 0; i < v_solid.size(); i++) 
-        sim->m.vels_solid[i] = Eigen::Vector2d (v_solid[i][0], v_solid[i][1]);    
+        m.vels_solid[i] = Eigen::Vector2d (v_solid[i][0], v_solid[i][1]);    
 
-    sim->m.set_boundaries(air, solid, triple, corner);
-
-    sim->m.update_neighbor_face_vecs();
-    sim->m.reset_face_length_limits();
-
+    m.set_boundaries(air, solid, triple, corner);
+    
 }
 
-
-void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::string & initialvelocity){
-    scene(sim, scenename);
-    int N = sim->n;
+void Scenes::setupSceneVelocities(std::vector<Eigen::Vector2d> & verts, std::vector<Eigen::Vector2d> & vels, const std::string & initialvelocity){
+    int N = vels.size();
 
     std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
 
-    std::vector<Eigen::Vector2d> v = sim->m.verts;
-    
     if (initialvelocity == "zero"){
         // (0,0)
         for (size_t i=0; i<N; i++){
@@ -179,40 +305,39 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
     } else if (initialvelocity == "linear_x"){
         // (x,0)
         for (size_t i=0; i<N; i++){
-            u[i].x() = v[i].x();
+            u[i].x() = verts[i].x();
             u[i].y() = 0;
         }
     } else if (initialvelocity == "linear_y"){
         // (0,y)
         for (size_t i=0; i<N; i++){
             u[i].x() = 0;
-            u[i].y() = v[i].y();
+            u[i].y() = verts[i].y();
         }
     } else if (initialvelocity == "harmonic_1"){
         // (y,x)
         for (size_t i=0; i<N; i++){
-            u[i].x() = v[i].y();
-            u[i].y() = v[i].x();
+            u[i].x() = verts[i].y();
+            u[i].y() = verts[i].x();
         }
     } else if (initialvelocity == "harmonic_2"){
         // (x,-y)
         for (size_t i=0; i<N; i++){
-            u[i].x() = v[i].x();
-            u[i].y() = -v[i].y();
+            u[i].x() = verts[i].x();
+            u[i].y() = -verts[i].y();
         }
     } else if (initialvelocity == "harmonic_3"){
         // (-x^2+y^2,2xy)
         for (size_t i=0; i<N; i++){
-            u[i].x() = -v[i].x()*v[i].x() + v[i].y()*v[i].y();
-            u[i].y() = 2 * v[i].x() * v[i].y();
+            u[i].x() = -verts[i].x()*verts[i].x() + verts[i].y()*verts[i].y();
+            u[i].y() = 2 * verts[i].x() * verts[i].y();
         }
     } else {
         std::cout<<"please enter a valid test velocity field!"<<std::endl;
         std::cout<<"defaulting to 0 velocity field!"<<std::endl;
     }
 
-    assert(sim->m.vels.size() == N);
+    assert(vels.size() == N);
     for (size_t i = 0; i < u.size(); i++) 
-        sim->m.vels[i] = Eigen::Vector2d (u[i][0], u[i][1]);  
+        vels[i] = Eigen::Vector2d (u[i][0], u[i][1]); 
 }
-
