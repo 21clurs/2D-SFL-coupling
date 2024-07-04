@@ -1,4 +1,15 @@
 #include "mesh.h"
+
+Mesh::Mesh(){
+    verts = std::vector<Eigen::Vector2d>(0, Eigen::Vector2d(0.0, 0.0));
+    faces = std::vector<Eigen::Vector2i>(0, Eigen::Vector2i(0, 0));
+
+    vels = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));
+    
+    vertsPrevFace = std::vector<int>(verts.size(),0);
+    vertsNextFace = std::vector<int>(verts.size(),0);
+}
+
 Mesh::Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces):
     verts(in_verts),
     faces(in_faces)

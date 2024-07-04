@@ -4,10 +4,92 @@
 #include <fstream> 
 #include <stdexcept>
 #include "boundaryintegral.h"
+#include "simoptions.h"
+#include "scenes.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector2i;
+
+// adapted from Options::ParseOptionFile() from Da 2016 code
+bool Sim::setAndLoadSimOptions(std::string infileName){
+    // set a bunch of default sim options
+    SimOptions::addStringOption ("scene", "circle");
+    SimOptions::addDoubleOption ("time-step", 0.01);
+    SimOptions::addDoubleOption ("simulation-time", 10.0);
+    SimOptions::addDoubleOption ("gravity", 0);
+
+    SimOptions::addDoubleOption ("sigma-sl", 1);
+    SimOptions::addDoubleOption ("sigma-la", 1);
+    SimOptions::addDoubleOption ("sigma-sa", 1);
+    SimOptions::addDoubleOption ("rho", 1);
+
+    SimOptions::addIntegerOption ("mesh-size-n", 32);
+    SimOptions::addIntegerOption ("mesh-remesh-on", 0);
+    SimOptions::addIntegerOption ("mesh-remesh-iters", 0);
+    SimOptions::addDoubleOption ("mesh-edge-max-ratio", 1.1);
+    SimOptions::addDoubleOption ("mesh-edge-min-ratio", 0.9);
+
+    SimOptions::addDoubleOption ("mesh-collision-epsilon", 0.9);
+
+    SimOptions::addStringOption ("mesh-initial-velocity", "zero");
+
+    SimOptions::addBooleanOption ("marker-particles-on", false);
+
+    // scene/original liquid mesh shape specific parameters
+    SimOptions::addDoubleOption ("radius", 1); // circle
+    SimOptions::addDoubleOption ("width", 1); // rectangle
+    SimOptions::addDoubleOption ("height", 1); // rectangle
+    
+    // load sim options file
+    SimOptions::loadSimOptions(infileName);
+}
+
+void Sim::run(){
+    // set up scene
+    Scenes::scene(this, SimOptions::strValue("scene"), SimOptions::strValue("mesh-initial-velocity"));
+    // collide liquid mesh with all the solids and such
+    collide();
+    // generate marker particles after collision
+    if (SimOptions::boolValue("marker-particles-on")){
+        genMarkerParticles(-1.5, 1.5, -0.5, 0, 0.1);
+    }
+
+    double dt = SimOptions::doubleValue("time-step");
+    int frames = (int) SimOptions::doubleValue("simulation-time")/dt;
+    for (int i=0; i<frames; i++){
+        // sim stuff
+        outputFrame(std::to_string(i)+".txt");
+        step_sim(i*dt);
+        
+        // progress messages
+        std::cout<<"Simulation steps "<<i+1<<"/"<<frames<<" complete."<<"\r";
+        std::cout.flush();
+
+        if (i==30){
+        //testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, -(1.0/4.0)*sin(t*4.0)); });
+        } 
+        if (i==344){
+        //testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, 0); });
+        }
+    }
+    std::cout << std::endl; 
+}
+
+Sim::Sim(){
+    n = SimOptions::intValue("mesh-size-n");
+    dt = SimOptions::doubleValue("time-step");
+    m = LiquidMesh();
+    sigma = SimOptions::doubleValue("sigma-la");
+    sigma_SL = SimOptions::doubleValue("sigma-sl");
+    sigma_SA = SimOptions::doubleValue("sigma-sa");
+    rho = SimOptions::doubleValue("rho");
+    gravity = Eigen::Vector2d({0.0, SimOptions::doubleValue("gravity")});
+    
+    p = Eigen::VectorXd::Zero(n);
+    dpdn = Eigen::VectorXd::Zero(n);
+    markerparticles = {};
+}
 
 Sim::Sim(LiquidMesh& m, int n, float dt):
     n(n),
@@ -17,7 +99,7 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     sigma_SL(1.0),
     sigma_SA(1.0),
     rho(1.0),
-    gravity(Eigen::Vector2d({0.0, -0.0}))
+    gravity(Eigen::Vector2d({0.0, -5.0}))
 {
     p = Eigen::VectorXd::Zero(n);
     dpdn = Eigen::VectorXd::Zero(n);
@@ -86,10 +168,10 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     file<<std::endl;
 
     // marker particle velocities
-    /*for (size_t i=0; i<markerparticles.size(); i++){
+    for (size_t i=0; i<markerparticles.size(); i++){
         Eigen::Vector2d tmp = HHD_FD(markerparticles[i], 0.01);
         file<<"pv "<<tmp[0]<<" "<<tmp[1]<<std::endl;
-    }*/
+    }
     file.close();
     
 

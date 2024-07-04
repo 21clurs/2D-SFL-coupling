@@ -13,6 +13,7 @@ class Sim
     friend class Scenes;
     public:
 
+        Sim();
         Sim(LiquidMesh& m, int n, float dt); 
 
         void addSolid(SolidMesh* solid);
@@ -34,10 +35,13 @@ class Sim
         void genMarkerParticles(double l, double r, double b, double t, double spacing);
         Eigen::Vector2d HHD_FD(Eigen::Vector2d x, double delta); 
         std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
+
+        static bool setAndLoadSimOptions(std::string infileName);
+        void run();
     private:
         int n;
         float dt;
-        LiquidMesh& m;
+        LiquidMesh m;
 
         // simulation parameters
         double sigma, sigma_SL, sigma_SA;

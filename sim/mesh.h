@@ -19,6 +19,7 @@ class Mesh
 
     public:
         // constructor
+        Mesh();
         Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
         Mesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces,  const std::vector<Eigen::Vector2d>& in_vels);
 

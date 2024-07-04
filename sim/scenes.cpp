@@ -57,20 +57,25 @@ namespace {
     }
 }
 
-void Scenes::scene(Sim &sim, const std::string & scenename){
-    int N = sim.n;
+void Scenes::scene(Sim * const &sim, const std::string & scenename){
+    int N = sim->n;
 
-    std::vector<Eigen::Vector2d> v;
-    std::vector<Eigen::Vector2i> f;
+    std::vector<Eigen::Vector2d> v(N, Eigen::Vector2d(0,0));
+    std::vector<Eigen::Vector2i> f(N, Eigen::Vector2i(0,0));
     std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
+
+    std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
+
+    std::vector<bool> air(N, true);
+    std::vector<bool> solid(N, false);
+    std::vector<bool> triple(N, false);
+    std::vector<bool> corner(N, false);
 
     if (scenename == "circle"){
 
         double r = SimOptions::doubleValue("radius");
 
         gen_ellipse(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
-        
-
     } else if (scenename == "rectangle"){
         double w = SimOptions::doubleValue("width");
         double h = SimOptions::doubleValue("height");
@@ -131,16 +136,83 @@ void Scenes::scene(Sim &sim, const std::string & scenename){
 
     }
 
-    sim.m.verts.resize(v.size());
-    for (size_t i = 0; i < v.size(); i++) 
-        sim.m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
-    sim.m.faces.resize(f.size()); 
-    for (size_t i = 0; i < f.size(); i++) 
-        sim.m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
-    sim.m.vels.resize(u.size());
-    for (size_t i = 0; i < u.size(); i++) 
-        sim.m.vels[i] = Eigen::Vector2d (u[i][0], u[i][1]);
-    sim.m.reset_face_length_limits();
+    sim->m.resize_mesh(v.size());
 
+    for (size_t i = 0; i < v.size(); i++) 
+        sim->m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
+    for (size_t i = 0; i < f.size(); i++) 
+        sim->m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
+    for (size_t i = 0; i < u.size(); i++) 
+        sim->m.vels[i] = Eigen::Vector2d (u[i][0], u[i][1]);  
+
+    for (size_t i = 0; i < v_solid.size(); i++) 
+        sim->m.vels_solid[i] = Eigen::Vector2d (v_solid[i][0], v_solid[i][1]);    
+
+    sim->m.set_boundaries(air, solid, triple, corner);
+
+    sim->m.update_neighbor_face_vecs();
+    sim->m.reset_face_length_limits();
+
+}
+
+
+void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::string & initialvelocity){
+    scene(sim, scenename);
+    int N = sim->n;
+
+    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
+
+    std::vector<Eigen::Vector2d> v = sim->m.verts;
+    
+    if (initialvelocity == "zero"){
+        // (0,0)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = 0;
+            u[i].y() = 0;
+        }
+    } else if (initialvelocity == "constant"){
+        // (1,0)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = 1;
+            u[i].y() = 0;
+        }
+    } else if (initialvelocity == "linear_x"){
+        // (x,0)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = v[i].x();
+            u[i].y() = 0;
+        }
+    } else if (initialvelocity == "linear_y"){
+        // (0,y)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = 0;
+            u[i].y() = v[i].y();
+        }
+    } else if (initialvelocity == "harmonic_1"){
+        // (y,x)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = v[i].y();
+            u[i].y() = v[i].x();
+        }
+    } else if (initialvelocity == "harmonic_2"){
+        // (x,-y)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = v[i].x();
+            u[i].y() = -v[i].y();
+        }
+    } else if (initialvelocity == "harmonic_3"){
+        // (-x^2+y^2,2xy)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = -v[i].x()*v[i].x() + v[i].y()*v[i].y();
+            u[i].y() = 2 * v[i].x() * v[i].y();
+        }
+    } else {
+        std::cout<<"please enter a valid test velocity field!"<<std::endl;
+        std::cout<<"defaulting to 0 velocity field!"<<std::endl;
+    }
+
+    assert(sim->m.vels.size() == N);
+    for (size_t i = 0; i < u.size(); i++) 
+        sim->m.vels[i] = Eigen::Vector2d (u[i][0], u[i][1]);  
 }
 

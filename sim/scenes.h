@@ -9,7 +9,8 @@
 
 class Scenes{
     public:
-        static void scene(Sim &sim, const std::string & scenename);
+        static void scene(Sim * const &sim, const std::string & scenename);
+        static void scene(Sim * const &sim, const std::string & scenename, const std::string & initialvelocity);
 };
 
 #endif

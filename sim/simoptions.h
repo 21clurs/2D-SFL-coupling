@@ -28,6 +28,8 @@ class SimOptions{
         static int                 intValue(const std::string & key);
         static double              doubleValue(const std::string & key);
         static bool                boolValue(const std::string & key);
+
+        static bool loadSimOptions(std::string infileName);
     
     protected:
         class SimOption
@@ -42,6 +44,7 @@ class SimOptions{
             bool        bool_value;
         };
         
+        // all the sim options!!
         static std::map<std::string, SimOption> sim_options;
 };
 
