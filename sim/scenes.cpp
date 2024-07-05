@@ -172,6 +172,12 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
 
     setupSceneShape(sim->m, scenename);
     setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
+
+    if (SimOptions::intValue("num-solids") == 1){
+        SolidMesh *m = new SolidMesh();
+        SolidMesh::loadMeshFromFile(*m, SimOptions::strValue("solid-file-1"));
+        sim->addSolid(m);
+    }
 }
 
 void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
@@ -200,8 +206,8 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         gen_rectangle(N, Eigen::Vector2d(0.0,0.0), w, h, v, f);
 
     } else if (scenename == "ellipse"){
-        double a = SimOptions::doubleValue("axis_horizontal");
-        double b = SimOptions::doubleValue("axis_vertical");
+        double a = SimOptions::doubleValue("axis-horizontal");
+        double b = SimOptions::doubleValue("axis-vertical");
 
         gen_ellipse(N, Eigen::Vector2d(0.0,0.0), a, b, v, f);
 
@@ -236,14 +242,14 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         gen_semicircle_v(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
 
     } else if (scenename == "donut"){
-        double r_outer = SimOptions::doubleValue("radius_outer");
-        double r_inner = SimOptions::doubleValue("radius_inner");
+        double r_outer = SimOptions::doubleValue("radius-outer");
+        double r_inner = SimOptions::doubleValue("radius-inner");
 
         gen_donut(N, Eigen::Vector2d(0.0,0.0), r_inner, r_outer, v, f);
 
     } else if (scenename == "square_donut"){
-        double d_outer = SimOptions::doubleValue("size_outer");
-        double d_inner = SimOptions::doubleValue("size_inner");
+        double d_outer = SimOptions::doubleValue("size-outer");
+        double d_inner = SimOptions::doubleValue("size-inner");
 
         std::cout<<d_outer<<","<<d_inner<<std::endl;
 

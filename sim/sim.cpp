@@ -38,13 +38,19 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
 
     // scene/original liquid mesh shape specific parameters
     SimOptions::addDoubleOption ("radius", 1);  // circle, semicircle
+    SimOptions::addDoubleOption ("axis-horizontal", 1);   // ellipse
+    SimOptions::addDoubleOption ("axis-vertical", 1);  // ellipse
     SimOptions::addDoubleOption ("width", 1);   // rectangle
     SimOptions::addDoubleOption ("height", 1);  // rectangle
-    SimOptions::addDoubleOption ("radius_outer", 1);    // donut
-    SimOptions::addDoubleOption ("radius_inner", 0.5);  // donut
-    SimOptions::addDoubleOption ("size_outer", 2);    // square donut
-    SimOptions::addDoubleOption ("size_inner", 0.5);  // square donut
-    
+    SimOptions::addDoubleOption ("radius-outer", 1);    // donut
+    SimOptions::addDoubleOption ("radius-inner", 0.5);  // donut
+    SimOptions::addDoubleOption ("size-outer", 2);    // square donut
+    SimOptions::addDoubleOption ("size-inner", 0.5);  // square donut
+
+    // allowing for solids
+    SimOptions::addIntegerOption ("num-solids", 0);
+    SimOptions::addStringOption ("solid-file-1", "");
+
     // load sim options file
     SimOptions::loadSimOptions(infileName);
 }
@@ -108,6 +114,12 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     p = Eigen::VectorXd::Zero(n);
     dpdn = Eigen::VectorXd::Zero(n);
     markerparticles = {};
+}
+
+Sim::~Sim(){
+    for(size_t i=0; i<solids.size(); i++){
+        delete solids[i];
+    }
 }
 
 void Sim::addSolid(SolidMesh* solid){

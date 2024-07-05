@@ -15,6 +15,7 @@ class Sim
 
         Sim();
         Sim(LiquidMesh& m, int n, float dt); 
+        ~Sim(); // need to manually delete stuff in the solids vector...
 
         void addSolid(SolidMesh* solid);
 

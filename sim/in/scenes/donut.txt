@@ -19,3 +19,9 @@ mesh-edge-min-ratio 0.9
 mesh-collision-epsilon 0.01
 
 mesh-initial-velocity zero
+
+size-outer 2
+size-inner 0.5
+
+num-solids 1
+solid-file-1 ./in/solids/square.txt
