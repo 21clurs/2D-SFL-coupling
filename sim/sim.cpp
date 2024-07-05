@@ -34,7 +34,12 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
 
     SimOptions::addStringOption ("mesh-initial-velocity", "zero");
 
-    SimOptions::addBooleanOption ("marker-particles-on", false);
+    SimOptions::addBooleanOption ("show-marker-particles", false);
+    SimOptions::addDoubleOption ("markers-left", -1);
+    SimOptions::addDoubleOption ("markers-right", 1);
+    SimOptions::addDoubleOption ("markers-bottom", -1);
+    SimOptions::addDoubleOption ("markers-top", 1);
+    SimOptions::addDoubleOption ("markers-spacing", 0.1);
 
     // scene/original liquid mesh shape specific parameters
     SimOptions::addDoubleOption ("radius", 1);  // circle, semicircle
@@ -61,8 +66,15 @@ void Sim::run(){
     // collide liquid mesh with all the solids and such
     collide();
     // generate marker particles after collision
-    if (SimOptions::boolValue("marker-particles-on")){
-        genMarkerParticles(-1.5, 1.5, -0.5, 0, 0.1);
+    if (SimOptions::boolValue("show-marker-particles")){
+        std::cout<<"Generating marker particles..."<<std::endl;
+        genMarkerParticles(
+            SimOptions::doubleValue("markers-left"),
+            SimOptions::doubleValue("markers-right"),
+            SimOptions::doubleValue("markers-bottom"),
+            SimOptions::doubleValue("markers-top"),
+            SimOptions::doubleValue("markers-spacing")
+        );
     }
 
     double dt = SimOptions::doubleValue("time-step");

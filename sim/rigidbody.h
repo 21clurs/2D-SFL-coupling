@@ -26,7 +26,8 @@ class RigidBody : public SolidMesh
     protected:
         double rotationTheta;           // RigidBody angle of rotation around its COM
         Eigen::Vector2d translation;    // RigidBody translation
-        Eigen::Matrix2d rotationMat;
+
+        Eigen::Matrix2d rotationMat;    // this is just updated whenever theta is changed...
 
         void calculateArea();
         void calculateCOM();
