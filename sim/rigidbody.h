@@ -24,8 +24,8 @@ class RigidBody : public SolidMesh
         void retrieveCurrentVerts(std::vector<Eigen::Vector2d>& v);
 
     protected:
-        double rotationTheta;           // RigidBody angle of rotation around its COM
         Eigen::Vector2d translation;    // RigidBody translation
+        double rotationTheta;           // RigidBody angle of rotation around its COM
 
         Eigen::Matrix2d rotationMat;    // this is just updated whenever theta is changed...
 

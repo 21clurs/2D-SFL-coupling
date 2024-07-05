@@ -40,7 +40,8 @@ namespace {
         for(size_t i=0; i<nVertical; i++){
             v[i+nHorizontal] = Eigen::Vector2d(left_x + w, bottom_y + i*delta);
         }
-        // topdelta = w/nHorizontal;
+        // top
+        delta = w/nHorizontal;
         for(size_t i=0; i<nHorizontal; i++){
             v[i+nHorizontal+nVertical] = Eigen::Vector2d((left_x+w)-i*delta, h+bottom_y);
         }
@@ -173,10 +174,28 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
     setupSceneShape(sim->m, scenename);
     setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
 
+    // TODO: make this better
     if (SimOptions::intValue("num-solids") == 1){
         SolidMesh *m = new SolidMesh();
         SolidMesh::loadMeshFromFile(*m, SimOptions::strValue("solid-file-1"));
         sim->addSolid(m);
+    } else if (SimOptions::intValue("num-solids") == 2){
+        SolidMesh *m1 = new SolidMesh();
+        SolidMesh::loadMeshFromFile(*m1, SimOptions::strValue("solid-file-1"));
+        sim->addSolid(m1);
+        SolidMesh *m2 = new SolidMesh();
+        SolidMesh::loadMeshFromFile(*m2, SimOptions::strValue("solid-file-2"));
+        sim->addSolid(m2);
+    } else if (SimOptions::intValue("num-solids") == 3){
+        SolidMesh *m1 = new SolidMesh();
+        SolidMesh::loadMeshFromFile(*m1, SimOptions::strValue("solid-file-1"));
+        sim->addSolid(m1);
+        SolidMesh *m2 = new SolidMesh();
+        SolidMesh::loadMeshFromFile(*m2, SimOptions::strValue("solid-file-2"));
+        sim->addSolid(m2);
+        SolidMesh *m3 = new SolidMesh();
+        SolidMesh::loadMeshFromFile(*m3, SimOptions::strValue("solid-file-3"));
+        sim->addSolid(m3);
     }
 }
 
@@ -254,12 +273,6 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         std::cout<<d_outer<<","<<d_inner<<std::endl;
 
         gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
-
-    } else if (scenename == "cup"){
-        double w = SimOptions::doubleValue("width");
-        double h = SimOptions::doubleValue("height");
-        
-        // TODO
 
     } else if (scenename == "cup_with_block"){
         double w_cup = SimOptions::doubleValue("cup_width");

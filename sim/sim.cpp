@@ -55,6 +55,8 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     // allowing for solids
     SimOptions::addIntegerOption ("num-solids", 0);
     SimOptions::addStringOption ("solid-file-1", "");
+    SimOptions::addStringOption ("solid-file-2", "");
+    SimOptions::addStringOption ("solid-file-3", "");
 
     // load sim options file
     SimOptions::loadSimOptions(infileName);
