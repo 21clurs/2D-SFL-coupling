@@ -6,6 +6,7 @@
 #include <Eigen/IterativeLinearSolvers>
 #include "liquidmesh.h"
 #include "solidmesh.h"
+#include "rigidbody.h"
 
 class Sim
 {
@@ -18,6 +19,7 @@ class Sim
         ~Sim(); // need to manually delete stuff in the solids vector...
 
         void addSolid(SolidMesh* solid);
+        void addRigidBody(RigidBody* rigidBody);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
@@ -51,6 +53,8 @@ class Sim
 
         // solid objects in the sim
         std::vector<SolidMesh*> solids;
+        // rigid bodoes in the sim
+        std::vector<RigidBody*> rigidBodies;
 
         // marker particles
         double BIE_Phi(Eigen::Vector2d x);

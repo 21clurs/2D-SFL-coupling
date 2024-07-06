@@ -1,5 +1,6 @@
 #include "scenes.h"
 #include "simoptions.h"
+#include "rigidbody.h"
 
 namespace {
     void gen_ellipse(int n, const Eigen::Vector2d& center, double a, double b, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
@@ -196,6 +197,13 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
         SolidMesh *m3 = new SolidMesh();
         SolidMesh::loadMeshFromFile(*m3, SimOptions::strValue("solid-file-3"));
         sim->addSolid(m3);
+    }
+    // TODO: make this better
+    if (SimOptions::intValue("num-rb") == 1){
+        RigidBody *r = new RigidBody();
+        SolidMesh::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-1"));
+        r->updateRigidBodyVars();
+        sim->addRigidBody(r);
     }
 }
 

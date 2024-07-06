@@ -128,4 +128,5 @@ bool SimOptions::loadSimOptions(std::string infileName){
         }
     }
     infile.close();
+    return true;
 }

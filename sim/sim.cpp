@@ -58,6 +58,10 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     SimOptions::addStringOption ("solid-file-2", "");
     SimOptions::addStringOption ("solid-file-3", "");
 
+    // for now, making a distinction between solids and rigid body...
+    SimOptions::addIntegerOption ("num-rb", 0);
+    SimOptions::addStringOption ("rigid-body-file-1", "");
+
     // load sim options file
     SimOptions::loadSimOptions(infileName);
 }
@@ -134,10 +138,17 @@ Sim::~Sim(){
     for(size_t i=0; i<solids.size(); i++){
         delete solids[i];
     }
+    for(size_t i=0; i<rigidBodies.size(); i++){
+        delete rigidBodies[i];
+    }
 }
 
 void Sim::addSolid(SolidMesh* solid){
     solids.emplace_back(solid);
+}
+
+void Sim::addRigidBody(RigidBody* rigidBody){
+    rigidBodies.emplace_back(rigidBody);
 }
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
@@ -188,6 +199,20 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
             file<<"f "<< m.faces.size()+ solids[i]->faces[j][0] + count<<" "<< m.faces.size()+ solids[i]->faces[j][1] + count<<std::endl;
         }
         count += solids[i]->verts.size();
+    }
+    file<<std::endl;
+
+    // rigid bodies
+    for (size_t i=0; i<rigidBodies.size(); i++){
+        // solid verts
+        for (size_t j=0; j<rigidBodies[i]->verts.size(); j++){
+            file<<"v "<<rigidBodies[i]->verts[j][0]<<" "<<rigidBodies[i]->verts[j][1]<<std::endl;
+        }
+        // solid faces
+        for (size_t j=0; j<rigidBodies[i]->faces.size(); j++){
+            file<<"f "<< m.faces.size()+ rigidBodies[i]->faces[j][0] + count<<" "<< m.faces.size()+ rigidBodies[i]->faces[j][1] + count<<std::endl;
+        }
+        count += rigidBodies[i]->verts.size();
     }
     file<<std::endl;
 
@@ -298,6 +323,10 @@ void Sim::step_advect(double t){
     // advect the scripted solids
     for (size_t i=0; i<solids.size(); i++){
         solids[i]->advectFE(t-dt*30, dt);
+    }
+    // advect the rigid bodies
+    for (size_t i=0; i<rigidBodies.size(); i++){
+        rigidBodies[i]->advectFE(t-dt*30, dt);
     }
     // "advect" the marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
@@ -1010,6 +1039,9 @@ void Sim::collide(){
     m.reset_boundary_types();
     for (size_t i=0; i<solids.size(); i++){
         solids[i]->collideAndSnap(m);
+    }
+    for (size_t i=0; i<rigidBodies.size(); i++){
+        rigidBodies[i]->collideAndSnap(m);
     }
     m.update_triple_points();
 }

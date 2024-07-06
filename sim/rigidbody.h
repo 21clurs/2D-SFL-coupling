@@ -14,6 +14,7 @@ class RigidBody : public SolidMesh
         double moi;                     // moment of inertia about the COM
 
         // constructors
+        RigidBody();
         RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
         RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
 
@@ -22,6 +23,8 @@ class RigidBody : public SolidMesh
         void setTranslation(Eigen::Vector2d t){ translation = t; };
 
         void retrieveCurrentVerts(std::vector<Eigen::Vector2d>& v);
+
+        void updateRigidBodyVars();     // something to quickly call to update all of Area, COM, MOI, rotation matrix
 
     protected:
         Eigen::Vector2d translation;    // RigidBody translation

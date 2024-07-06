@@ -1,24 +1,32 @@
 #include "rigidbody.h"
+
+RigidBody::RigidBody() : SolidMesh(){
+    rotationTheta = 0;
+    translation = Eigen::Vector2d(0,0);
+    updateRigidBodyVars();
+}
+
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : SolidMesh(in_verts, in_faces){
     rotationTheta = 0;
-    updateRotationMat();
     translation = Eigen::Vector2d(0,0);
-    calculateArea();
-    calculateCOM();
-    calculateMOI();
+    updateRigidBodyVars();
 }
 
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : SolidMesh(in_verts, in_faces, in_vels){
     rotationTheta = 0;
-    updateRotationMat();
     translation = Eigen::Vector2d(0,0);
-    calculateArea();
-    calculateCOM();
-    calculateMOI();
+    updateRigidBodyVars();
 }
 
 void RigidBody::setRotation(double theta){
     rotationTheta = theta;
+    updateRotationMat();
+}
+
+void RigidBody::updateRigidBodyVars(){
+    calculateArea();
+    calculateCOM();
+    calculateMOI();
     updateRotationMat();
 }
 

@@ -1,7 +1,7 @@
 scene donut
 
 time-step 0.01
-simulation-time 4
+simulation-time 8
 gravity 0
 
 sigma-la 1
@@ -17,10 +17,10 @@ mesh-edge-min-ratio 0.9
 
 mesh-collision-epsilon 0.01
 
-mesh-initial-velocity zero
+mesh-initial-velocity harmonic_1
 
-radius-outer 2
+radius-outer 1
 radius-inner 0.5
 
-num-solids 1
-solid-file-1 ./in/solids/square.txt
+num-rb 1
+rigid-body-file-1 ./in/solids/square.txt
