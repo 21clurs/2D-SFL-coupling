@@ -60,10 +60,6 @@ class Sim
         double BIE_Phi(Eigen::Vector2d x);
         double BIE_A(Eigen::Vector2d x);
 
-        // holds p and dpdn from the most current BEM step-- necessary to evaluate marker particles
-        Eigen::VectorXd p;
-        Eigen::VectorXd dpdn;
-
         void remesh();
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);

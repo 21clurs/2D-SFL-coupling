@@ -64,13 +64,16 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
 
     // load sim options file
     SimOptions::loadSimOptions(infileName);
+    return true;
 }
 
 void Sim::run(){
     // set up scene
     Scenes::scene(this, SimOptions::strValue("scene"), SimOptions::strValue("mesh-initial-velocity"));
+    
     // collide liquid mesh with all the solids and such
     collide();
+    
     // generate marker particles after collision
     if (SimOptions::boolValue("show-marker-particles")){
         std::cout<<"Generating marker particles..."<<std::endl;
@@ -83,6 +86,7 @@ void Sim::run(){
         );
     }
 
+    // main sim loop
     double dt = SimOptions::doubleValue("time-step");
     int frames = (int) SimOptions::doubleValue("simulation-time")/dt;
     for (int i=0; i<frames; i++){
@@ -93,13 +97,6 @@ void Sim::run(){
         // progress messages
         std::cout<<"Simulation steps "<<i+1<<"/"<<frames<<" complete."<<"\r";
         std::cout.flush();
-
-        if (i==30){
-        //testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, -(1.0/4.0)*sin(t*4.0)); });
-        } 
-        if (i==344){
-        //testSolid.setVelFunc([](double t)->Vector2d{ return Vector2d(0, 0); });
-        }
     }
     std::cout << std::endl; 
 }
@@ -114,8 +111,6 @@ Sim::Sim(){
     rho = SimOptions::doubleValue("rho");
     gravity = Eigen::Vector2d({0.0, SimOptions::doubleValue("gravity")});
     
-    p = Eigen::VectorXd::Zero(n);
-    dpdn = Eigen::VectorXd::Zero(n);
     markerparticles = {};
 }
 
@@ -129,8 +124,6 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -5.0}))
 {
-    p = Eigen::VectorXd::Zero(n);
-    dpdn = Eigen::VectorXd::Zero(n);
     markerparticles = {};
 }
 
@@ -525,8 +518,8 @@ void Sim::step_BEM(){
     step_BEM_BC(BC_p, BC_dpdn);
     
     // reset p and dpdn, and make correct size
-    p = Eigen::VectorXd::Zero(N);
-    dpdn = Eigen::VectorXd::Zero(N);
+    Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
+    Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
 
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn);
     

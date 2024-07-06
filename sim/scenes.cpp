@@ -282,14 +282,6 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
         gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
 
-    } else if (scenename == "cup_with_block"){
-        double w_cup = SimOptions::doubleValue("cup_width");
-        double h_cup = SimOptions::doubleValue("cup_height");
-        double w_block = SimOptions::doubleValue("block_width");
-        double h_block = SimOptions::doubleValue("block_height");
-
-        // TODO
-
     } else {
         std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
         return;
