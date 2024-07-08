@@ -194,9 +194,8 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
     assert(v.size() == f.size());
 
     m.verts_no_transform = v;
-    m.faces = f;
-
     m.verts = v;
+    m.faces = f;
     m.update_neighbor_face_vecs();
 
     m.vels.resize(v.size());

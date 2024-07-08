@@ -100,34 +100,5 @@ int main(int argc, char **argv){
   Object w(dt, b, a);
   w.setVelFunc([](double t)->Vector2d{ return Vector2d(0, (1.0/4.0)*cos(t*2.0-M_PI_2)); });
   s.addWall(&w);*/
-  
-  
 
-  // quick and dirty rigid body tests
-  vector<Vector2d> squareverts = {
-    Vector2d(0,0),
-    Vector2d(1,0),
-    Vector2d(1,1),
-    Vector2d(0,1),
-    /*Vector2d(0.5,0.5),
-    Vector2d(0.8,0.5),
-    Vector2d(0.8,0.2),
-    Vector2d(0.5,0.2)*/
-  };
-  vector<Vector2i> squarefaces = {
-    Vector2i(0,1),
-    Vector2i(1,2),
-    Vector2i(2,3),
-    Vector2i(3,0),
-    /*Vector2i(4,5),
-    Vector2i(5,6),
-    Vector2i(6,7),
-    Vector2i(7,4)*/
-  };
-  /*
-  RigidBody testRB(squareverts,squarefaces);
-  cout<<"area: "<<testRB.area<<endl;
-  cout<<"COM: "<<testRB.com[0]<<","<<testRB.com[1]<<endl;
-  cout<<"MOI: "<<testRB.moi<<endl;
-  */
 }

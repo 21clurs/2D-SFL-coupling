@@ -58,10 +58,6 @@ class Sim
         // rigid bodies in the sim
         std::vector<RigidBody*> rigidBodies;
 
-        // marker particles
-        double BIE_Phi(Eigen::Vector2d x);
-        double BIE_A(Eigen::Vector2d x);
-
         void remesh();
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);

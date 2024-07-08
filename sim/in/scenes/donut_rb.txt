@@ -10,7 +10,6 @@ sigma-sa 1
 rho 1
     
 mesh-size-n 40
-mesh-remesh-on 1
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.1
 mesh-edge-min-ratio 0.9
@@ -21,6 +20,13 @@ mesh-initial-velocity zero
 
 radius-outer 1
 radius-inner 0.5
+
+show-marker-particles 1
+markers-left -1.0
+markers-right 1.0
+markers-bottom -1.0
+markers-top 1.0
+markers-spacing 0.1
 
 num-rb 1
 rigid-body-file-1 ./in/solids/square_rb.txt

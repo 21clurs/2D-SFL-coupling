@@ -57,6 +57,8 @@ bool SolidMesh::loadMeshFromFile(SolidMesh &m, std::string infileName){
     m.verts = v;
     m.faces = f;
     m.update_neighbor_face_vecs();
+    
+    m.vels.resize(v.size());
 
     return true;
 }

@@ -25,7 +25,6 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     SimOptions::addDoubleOption ("rho", 1);
 
     SimOptions::addIntegerOption ("mesh-size-n", 32);
-    SimOptions::addIntegerOption ("mesh-remesh-on", 0);
     SimOptions::addIntegerOption ("mesh-remesh-iters", 0);
     SimOptions::addDoubleOption ("mesh-edge-max-ratio", 1.1);
     SimOptions::addDoubleOption ("mesh-edge-min-ratio", 0.9);
@@ -924,84 +923,37 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 }
 
 Eigen::Vector2d Sim::HHD_FD(Eigen::Vector2d x, double delta){
-    // gonna do HHD here again yay to evaluate/approximate velocity at x
-    // except no need to worry about singularities???
-    std::vector<Eigen::Vector2d> x_deltas = {
-        Eigen::Vector2d(x.x() + delta, x.y()),
-        Eigen::Vector2d(x.x() - delta, x.y()),
-        Eigen::Vector2d(x.x(), x.y() + delta),
-        Eigen::Vector2d(x.x(), x.y() - delta)
-    };
-    std::vector<double> phi_gammas(x_deltas.size(),0.0);
-    std::vector<double> A_gammas(x_deltas.size(),0.0);
-    for(size_t i=0; i<x_deltas.size(); i++){
-        phi_gammas[i] = BIE_Phi(x_deltas[i]);
-        A_gammas[i] = BIE_A(x_deltas[i]);
+    // we do HHD here to evaluate/approximate velocity at x, where x is NOT on the boundary
+    // therefore, no need to worry about singularities
+
+    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
+    double jacobian = 0.5;
+
+    Eigen::Vector2d gradPhi = Eigen::Vector2d::Zero();
+    Eigen::Vector2d curlA = Eigen::Vector2d::Zero();
+    for (size_t i=0; i<m.faces.size(); i++){
+        double f_len = m.face_length(i);
+        Eigen::Vector2d n_y = m.calc_face_normal(i);
+
+        Eigen::Vector2d phi_face = Eigen::Vector2d::Zero();
+        Eigen::Vector2d A_face = Eigen::Vector2d::Zero();
+        for (size_t qi = 0; qi<quadrature_GQ.size(); qi++){
+            double qik = quadrature_GQ[qi].x();
+            double qiw = quadrature_GQ[qi].y();
+            
+            Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(i)[0]], m.verts[m.verts_from_face(i)[1]], qik);
+            Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(i)[0]], m.vels[m.verts_from_face(i)[1]], qik);
+
+            Eigen::Vector2d gradG = BoundaryIntegral::gradG(x,y);
+
+            A_face += qiw * (cross2d(n_y,v_y)) * gradG;
+            phi_face += qiw * (n_y.dot(v_y)) * gradG;
+        }
+        gradPhi += phi_face * (jacobian * f_len);
+        curlA += A_face * (jacobian * f_len);
     }
-    Eigen::Vector2d gradPhi_FD(
-        (phi_gammas[0]-phi_gammas[1])/(2*delta),
-        (phi_gammas[2]-phi_gammas[3])/(2*delta)
-    );
-    Eigen::Vector2d curlA_FD(
-        (A_gammas[2]-A_gammas[3])/(2*delta),
-        -(A_gammas[0]-A_gammas[1])/(2*delta)
-    );
     
-    return -(curlA_FD - gradPhi_FD); //idk why this sign needs to be flipped here???
-}
-
-double Sim::BIE_Phi(Eigen::Vector2d x){
-    // evaluating Phi_Gamma at point x
-    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
-    double jacobian = 0.5;
-
-    double phi = 0;
-    for (size_t i=0; i<m.faces.size(); i++){
-        double f_len = m.face_length(i);
-        Eigen::Vector2d n_y = m.calc_face_normal(i);
-
-        double phi_face = 0;
-        for (size_t qi = 0; qi<quadrature_GQ.size(); qi++){
-            double qik = quadrature_GQ[qi].x();
-            double qiw = quadrature_GQ[qi].y();
-            
-            Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(i)[0]], m.verts[m.verts_from_face(i)[1]], qik);
-            Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(i)[0]], m.vels[m.verts_from_face(i)[1]], qik);
-
-            double G = BoundaryIntegral::G(x,y);
-
-            phi_face += qiw * (n_y.dot(v_y)) * G;
-        }
-        phi += phi_face * (jacobian * f_len);
-    }
-    return phi;
-}
-
-double Sim::BIE_A(Eigen::Vector2d x){
-    // evaluating A_Gamma at point x
-    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
-    double jacobian = 0.5;
-
-    double A = 0;
-    for (size_t i=0; i<m.faces.size(); i++){
-        double f_len = m.face_length(i);
-        Eigen::Vector2d n_y = m.calc_face_normal(i);
-
-        double A_face = 0;
-        for (size_t qi = 0; qi<quadrature_GQ.size(); qi++){
-            double qik = quadrature_GQ[qi].x();
-            double qiw = quadrature_GQ[qi].y();
-            
-            Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(i)[0]], m.verts[m.verts_from_face(i)[1]], qik);
-            Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(i)[0]], m.vels[m.verts_from_face(i)[1]], qik);
-
-            double G = BoundaryIntegral::G(x,y);
-
-            A_face += qiw * (cross2d(n_y,v_y)) * G;
-        }
-        A += A_face * (jacobian * f_len);
-    }
-    return A;
+    return -(curlA - gradPhi); //idk why this sign needs to be flipped here???
 }
 
 Eigen::Vector2d Sim::lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q){
