@@ -33,11 +33,6 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
     updateVerts();
 }
 
-void RigidBody::setRotation(double theta){
-    rotationTheta = theta;
-    updateRotationMat();
-}
-
 void RigidBody::advectFE(double dt){
     setTranslation(translation + V_t*dt);
     setRotation(rotationTheta +  V_omega*dt);
@@ -48,7 +43,6 @@ void RigidBody::updateRigidBodyVars(){
     calculateArea();
     calculateCOM();
     calculateMOI();
-    updateRotationMat();
 }
 
 void RigidBody::calculateArea(){
@@ -92,18 +86,12 @@ void RigidBody::calculateMOI(){
     moi = I_x + I_y; // placeholder
 }
 
-void RigidBody::updateRotationMat(){
-    // rotates clockwise by theta
-    rotationMat << cos(rotationTheta), -sin(rotationTheta),
-                sin(rotationTheta), cos(rotationTheta);
-}
-
 void RigidBody::updateVerts(){
     if (verts.size()!=verts_no_transform.size()){
         verts.resize(verts_no_transform.size());
     }
     for (size_t i = 0; i<verts.size(); i++){
-        verts[i] = rotationMat*(verts_no_transform[i]-com) + com + translation;
+        verts[i] = Eigen::Rotation2Dd(rotationTheta)*(verts_no_transform[i]-com) + com + translation;
     }
 }
 

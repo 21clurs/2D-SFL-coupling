@@ -19,7 +19,7 @@ class RigidBody : public SolidMesh
         RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
 
         // setters
-        void setRotation(double theta);
+        void setRotation(double theta){ rotationTheta = theta; };
         void setTranslation(Eigen::Vector2d t){ translation = t; };
 
         void setRigidBodyV(Eigen::Vector2d V_t_in, double V_omega_in) { V_t = V_t_in; V_omega = V_omega_in; };
@@ -47,8 +47,6 @@ class RigidBody : public SolidMesh
         
         Eigen::Vector2d V_t;                // RigidBody translational velocity
         double V_omega;                     // RigidBody rotational velocity
-
-        Eigen::Matrix2d rotationMat;        // this is just updated whenever theta is changed...
 
         void calculateArea();
         void calculateCOM();
