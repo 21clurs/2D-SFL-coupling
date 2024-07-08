@@ -41,6 +41,8 @@ class Sim
 
         static bool setAndLoadSimOptions(std::string infileName);
         void run();
+
+        static double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
     private:
         int n;
         float dt;
@@ -53,7 +55,7 @@ class Sim
 
         // solid objects in the sim
         std::vector<SolidMesh*> solids;
-        // rigid bodoes in the sim
+        // rigid bodies in the sim
         std::vector<RigidBody*> rigidBodies;
 
         // marker particles
@@ -65,8 +67,6 @@ class Sim
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);
         double M_1(double t);
         double M_2(double t);
-
-        double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
 
         void step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn);
         void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn);

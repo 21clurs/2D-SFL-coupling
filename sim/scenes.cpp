@@ -201,8 +201,9 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
     // TODO: make this better
     if (SimOptions::intValue("num-rb") == 1){
         RigidBody *r = new RigidBody();
-        SolidMesh::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-1"));
+        RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-1"));
         r->updateRigidBodyVars();
+        r->updateVerts();
         sim->addRigidBody(r);
     }
 }

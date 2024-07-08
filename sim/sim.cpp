@@ -315,11 +315,12 @@ void Sim::step_advect(double t){
     }
     // advect the scripted solids
     for (size_t i=0; i<solids.size(); i++){
-        solids[i]->advectFE(t-dt*30, dt);
+        solids[i]->advectFE(dt);
     }
-    // advect the rigid bodies
+    // advect the rigid bodies (and rigid body velocities)
     for (size_t i=0; i<rigidBodies.size(); i++){
-        rigidBodies[i]->advectFE(t-dt*30, dt);
+        rigidBodies[i]->updatePerVertexVels();
+        rigidBodies[i]->advectFE(dt);
     }
     // "advect" the marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
@@ -518,8 +519,11 @@ void Sim::step_BEM(){
     step_BEM_BC(BC_p, BC_dpdn);
     
     // reset p and dpdn, and make correct size
+    // we are trying to solve for these!
     Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
     Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
+    // we are also trying to solve for V for each rigidbody
+    //std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies.size(), Eigen::Vector3d::Zero());
 
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn);
     
@@ -1017,7 +1021,7 @@ double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
 }
 
 void Sim::remesh(){
-    for(size_t i=0; i<6; i++){
+    for(size_t i=0; i<SimOptions::intValue("mesh-remesh-iters"); i++){
         m.remesh();
         collide();
     }
