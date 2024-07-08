@@ -952,6 +952,7 @@ Eigen::Vector2d Sim::HHD_FD(Eigen::Vector2d x, double delta){
         gradPhi += phi_face * (jacobian * f_len);
         curlA += A_face * (jacobian * f_len);
     }
+    curlA = Eigen::Vector2d(curlA.y(), -curlA.x());
     
     return -(curlA - gradPhi); //idk why this sign needs to be flipped here???
 }
