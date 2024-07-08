@@ -1,0 +1,27 @@
+scene square_donut
+radius 1
+
+time-step 0.01
+simulation-time 4
+gravity 0
+
+sigma-la 1
+sigma-sl 1
+sigma-sa 1
+rho 1
+    
+mesh-size-n 40
+mesh-remesh-on 0
+mesh-remesh-iters 0
+mesh-edge-max-ratio 1.1
+mesh-edge-min-ratio 0.9
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity zero
+
+size-outer 2
+size-inner 0.5
+
+num-solids 1
+solid-file-1 ./in/solids/square.txt

@@ -4,10 +4,115 @@
 #include <fstream> 
 #include <stdexcept>
 #include "boundaryintegral.h"
+#include "simoptions.h"
+#include "scenes.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector2i;
+
+// adapted from Options::ParseOptionFile() from Da 2016 code
+bool Sim::setAndLoadSimOptions(std::string infileName){
+    // set a bunch of default sim options
+    SimOptions::addStringOption ("scene", "circle");
+    SimOptions::addDoubleOption ("time-step", 0.01);
+    SimOptions::addDoubleOption ("simulation-time", 10.0);
+    SimOptions::addDoubleOption ("gravity", 0);
+
+    SimOptions::addDoubleOption ("sigma-sl", 1);
+    SimOptions::addDoubleOption ("sigma-la", 1);
+    SimOptions::addDoubleOption ("sigma-sa", 1);
+    SimOptions::addDoubleOption ("rho", 1);
+
+    SimOptions::addIntegerOption ("mesh-size-n", 32);
+    SimOptions::addIntegerOption ("mesh-remesh-on", 0);
+    SimOptions::addIntegerOption ("mesh-remesh-iters", 0);
+    SimOptions::addDoubleOption ("mesh-edge-max-ratio", 1.1);
+    SimOptions::addDoubleOption ("mesh-edge-min-ratio", 0.9);
+
+    SimOptions::addDoubleOption ("mesh-collision-epsilon", 0.9);
+
+    SimOptions::addStringOption ("mesh-initial-velocity", "zero");
+
+    SimOptions::addBooleanOption ("show-marker-particles", false);
+    SimOptions::addDoubleOption ("markers-left", -1);
+    SimOptions::addDoubleOption ("markers-right", 1);
+    SimOptions::addDoubleOption ("markers-bottom", -1);
+    SimOptions::addDoubleOption ("markers-top", 1);
+    SimOptions::addDoubleOption ("markers-spacing", 0.1);
+
+    // scene/original liquid mesh shape specific parameters
+    SimOptions::addDoubleOption ("radius", 1);  // circle, semicircle
+    SimOptions::addDoubleOption ("axis-horizontal", 1);   // ellipse
+    SimOptions::addDoubleOption ("axis-vertical", 1);  // ellipse
+    SimOptions::addDoubleOption ("width", 1);   // rectangle
+    SimOptions::addDoubleOption ("height", 1);  // rectangle
+    SimOptions::addDoubleOption ("radius-outer", 1);    // donut
+    SimOptions::addDoubleOption ("radius-inner", 0.5);  // donut
+    SimOptions::addDoubleOption ("size-outer", 2);    // square donut
+    SimOptions::addDoubleOption ("size-inner", 0.5);  // square donut
+
+    // allowing for solids
+    SimOptions::addIntegerOption ("num-solids", 0);
+    SimOptions::addStringOption ("solid-file-1", "");
+    SimOptions::addStringOption ("solid-file-2", "");
+    SimOptions::addStringOption ("solid-file-3", "");
+
+    // for now, making a distinction between solids and rigid body...
+    SimOptions::addIntegerOption ("num-rb", 0);
+    SimOptions::addStringOption ("rigid-body-file-1", "");
+
+    // load sim options file
+    SimOptions::loadSimOptions(infileName);
+    return true;
+}
+
+void Sim::run(){
+    // set up scene
+    Scenes::scene(this, SimOptions::strValue("scene"), SimOptions::strValue("mesh-initial-velocity"));
+    
+    // collide liquid mesh with all the solids and such
+    collide();
+    
+    // generate marker particles after collision
+    if (SimOptions::boolValue("show-marker-particles")){
+        std::cout<<"Generating marker particles..."<<std::endl;
+        genMarkerParticles(
+            SimOptions::doubleValue("markers-left"),
+            SimOptions::doubleValue("markers-right"),
+            SimOptions::doubleValue("markers-bottom"),
+            SimOptions::doubleValue("markers-top"),
+            SimOptions::doubleValue("markers-spacing")
+        );
+    }
+
+    // main sim loop
+    double dt = SimOptions::doubleValue("time-step");
+    int frames = (int) SimOptions::doubleValue("simulation-time")/dt;
+    for (int i=0; i<frames; i++){
+        // sim stuff
+        outputFrame(std::to_string(i)+".txt");
+        step_sim(i*dt);
+        
+        // progress messages
+        std::cout<<"Simulation steps "<<i+1<<"/"<<frames<<" complete."<<"\r";
+        std::cout.flush();
+    }
+    std::cout << std::endl; 
+}
+
+Sim::Sim(){
+    n = SimOptions::intValue("mesh-size-n");
+    dt = SimOptions::doubleValue("time-step");
+    m = LiquidMesh();
+    sigma = SimOptions::doubleValue("sigma-la");
+    sigma_SL = SimOptions::doubleValue("sigma-sl");
+    sigma_SA = SimOptions::doubleValue("sigma-sa");
+    rho = SimOptions::doubleValue("rho");
+    gravity = Eigen::Vector2d({0.0, SimOptions::doubleValue("gravity")});
+    
+    markerparticles = {};
+}
 
 Sim::Sim(LiquidMesh& m, int n, float dt):
     n(n),
@@ -19,13 +124,24 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     rho(1.0),
     gravity(Eigen::Vector2d({0.0, -5.0}))
 {
-    p = Eigen::VectorXd::Zero(n);
-    dpdn = Eigen::VectorXd::Zero(n);
     markerparticles = {};
+}
+
+Sim::~Sim(){
+    for(size_t i=0; i<solids.size(); i++){
+        delete solids[i];
+    }
+    for(size_t i=0; i<rigidBodies.size(); i++){
+        delete rigidBodies[i];
+    }
 }
 
 void Sim::addSolid(SolidMesh* solid){
     solids.emplace_back(solid);
+}
+
+void Sim::addRigidBody(RigidBody* rigidBody){
+    rigidBodies.emplace_back(rigidBody);
 }
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
@@ -79,6 +195,20 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     }
     file<<std::endl;
 
+    // rigid bodies
+    for (size_t i=0; i<rigidBodies.size(); i++){
+        // solid verts
+        for (size_t j=0; j<rigidBodies[i]->verts.size(); j++){
+            file<<"v "<<rigidBodies[i]->verts[j][0]<<" "<<rigidBodies[i]->verts[j][1]<<std::endl;
+        }
+        // solid faces
+        for (size_t j=0; j<rigidBodies[i]->faces.size(); j++){
+            file<<"f "<< m.faces.size()+ rigidBodies[i]->faces[j][0] + count<<" "<< m.faces.size()+ rigidBodies[i]->faces[j][1] + count<<std::endl;
+        }
+        count += rigidBodies[i]->verts.size();
+    }
+    file<<std::endl;
+
     // marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
         file<<"p "<<markerparticles[i][0]<<" "<<markerparticles[i][1]<<std::endl;
@@ -86,10 +216,10 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     file<<std::endl;
 
     // marker particle velocities
-    /*for (size_t i=0; i<markerparticles.size(); i++){
+    for (size_t i=0; i<markerparticles.size(); i++){
         Eigen::Vector2d tmp = HHD_FD(markerparticles[i], 0.01);
         file<<"pv "<<tmp[0]<<" "<<tmp[1]<<std::endl;
-    }*/
+    }
     file.close();
     
 
@@ -185,7 +315,12 @@ void Sim::step_advect(double t){
     }
     // advect the scripted solids
     for (size_t i=0; i<solids.size(); i++){
-        solids[i]->advectFE(t-dt*30, dt);
+        solids[i]->advectFE(dt);
+    }
+    // advect the rigid bodies (and rigid body velocities)
+    for (size_t i=0; i<rigidBodies.size(); i++){
+        rigidBodies[i]->updatePerVertexVels();
+        rigidBodies[i]->advectFE(dt);
     }
     // "advect" the marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
@@ -384,8 +519,11 @@ void Sim::step_BEM(){
     step_BEM_BC(BC_p, BC_dpdn);
     
     // reset p and dpdn, and make correct size
-    p = Eigen::VectorXd::Zero(N);
-    dpdn = Eigen::VectorXd::Zero(N);
+    // we are trying to solve for these!
+    Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
+    Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
+    // we are also trying to solve for V for each rigidbody
+    //std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies.size(), Eigen::Vector3d::Zero());
 
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn);
     
@@ -883,7 +1021,7 @@ double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
 }
 
 void Sim::remesh(){
-    for(size_t i=0; i<6; i++){
+    for(size_t i=0; i<SimOptions::intValue("mesh-remesh-iters"); i++){
         m.remesh();
         collide();
     }
@@ -898,6 +1036,9 @@ void Sim::collide(){
     m.reset_boundary_types();
     for (size_t i=0; i<solids.size(); i++){
         solids[i]->collideAndSnap(m);
+    }
+    for (size_t i=0; i<rigidBodies.size(); i++){
+        rigidBodies[i]->collideAndSnap(m);
     }
     m.update_triple_points();
 }

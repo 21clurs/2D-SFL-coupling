@@ -1,0 +1,32 @@
+scene rectangle
+width 2.5
+height 1
+
+time-step 0.005
+simulation-time 4
+gravity -1
+
+sigma-la 1
+sigma-sl 1
+sigma-sa 1
+rho 1
+    
+mesh-size-n 64
+mesh-remesh-on 1
+mesh-remesh-iters 6
+mesh-edge-max-ratio 1.1
+mesh-edge-min-ratio 0.9
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity zero
+
+show-marker-particles 1
+markers-left -1.25
+markers-right 1.25
+markers-bottom -0.5
+markers-top 0.5
+markers-spacing 0.1
+
+num-solids 1
+solid-file-1 ./in/solids/cup.txt

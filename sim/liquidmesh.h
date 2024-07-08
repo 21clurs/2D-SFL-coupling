@@ -8,16 +8,19 @@
 class LiquidMesh : public Mesh
 {
     friend class Sim;
+    friend class Scenes;
     friend class SolidMesh;
     friend class TestingHelpers;
     protected:
         std::vector<Eigen::Vector2d> vels_solid;
     public:
         // constructors
+        LiquidMesh();
         LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces);
         LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
         
         void set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple);
+        void set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple, std::vector<bool> corner);
         void set_boundaries_for_vertex(int i, bool air, bool solid, bool triple, bool corner);
 
         std::vector<bool> get_solid_faces();
@@ -25,12 +28,15 @@ class LiquidMesh : public Mesh
         void remesh();
 
         void reset_boundary_types();
+        void reset_face_length_limits();
 
         void laplacian_smoothing();
         void edge_collapse();
         void edge_split();
 
         double signed_min_dist(Eigen::Vector2d x);
+
+        void resize_mesh(size_t n);
     private:
         std::vector<bool> is_air;
         std::vector<bool> is_solid;

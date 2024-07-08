@@ -6,15 +6,20 @@
 #include <Eigen/IterativeLinearSolvers>
 #include "liquidmesh.h"
 #include "solidmesh.h"
+#include "rigidbody.h"
 
 class Sim
 {
     friend class TestingHelpers;
+    friend class Scenes;
     public:
 
+        Sim();
         Sim(LiquidMesh& m, int n, float dt); 
+        ~Sim(); // need to manually delete stuff in the solids vector...
 
         void addSolid(SolidMesh* solid);
+        void addRigidBody(RigidBody* rigidBody);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
@@ -33,10 +38,15 @@ class Sim
         void genMarkerParticles(double l, double r, double b, double t, double spacing);
         Eigen::Vector2d HHD_FD(Eigen::Vector2d x, double delta); 
         std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
+
+        static bool setAndLoadSimOptions(std::string infileName);
+        void run();
+
+        static double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
     private:
         int n;
         float dt;
-        LiquidMesh& m;
+        LiquidMesh m;
 
         // simulation parameters
         double sigma, sigma_SL, sigma_SA;
@@ -45,22 +55,18 @@ class Sim
 
         // solid objects in the sim
         std::vector<SolidMesh*> solids;
+        // rigid bodies in the sim
+        std::vector<RigidBody*> rigidBodies;
 
         // marker particles
         double BIE_Phi(Eigen::Vector2d x);
         double BIE_A(Eigen::Vector2d x);
-
-        // holds p and dpdn from the most current BEM step-- necessary to evaluate marker particles
-        Eigen::VectorXd p;
-        Eigen::VectorXd dpdn;
 
         void remesh();
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);
         double M_1(double t);
         double M_2(double t);
-
-        double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
 
         void step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn);
         void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn);

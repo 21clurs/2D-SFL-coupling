@@ -1,5 +1,10 @@
 #include "solidmesh.h"
+#include <fstream>
 
+SolidMesh::SolidMesh() : Mesh(){ 
+    v_effective = Eigen::Vector2d(0,0);
+    vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
+}
 SolidMesh::SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : Mesh(in_verts, in_faces){ 
     v_effective = Eigen::Vector2d(0,0);
     vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
@@ -7,6 +12,53 @@ SolidMesh::SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
 SolidMesh::SolidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : Mesh(in_verts, in_faces, in_vels){
     v_effective = Eigen::Vector2d(0,0); 
     vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
+}
+
+bool SolidMesh::loadMeshFromFile(SolidMesh &m, std::string infileName){
+    // load sim options file
+    std::ifstream infile(infileName);
+    if (!infile.is_open()) { 
+        std::cerr << "Unable to open solid file "<<infileName<<"!" << std::endl; 
+        assert(!"Unable to open options file!");
+    }
+
+    std::vector<Eigen::Vector2d> v;
+    std::vector<Eigen::Vector2i> f;
+
+    std::string line;
+    while(!infile.eof()){
+        std::getline(infile, line);
+        std::stringstream ss(line);
+
+        std::string linetype;
+        ss >> linetype;
+        if (linetype == "#" || linetype == "" || ss.eof())    // skip comment lines and empty lines
+            continue;
+        
+        if (linetype.compare("v") == 0){
+            double a,b;
+            ss >> a;
+            ss >> b;
+            v.emplace_back(Eigen::Vector2d(a,b));
+        } else if (linetype.compare("f") == 0){
+            int a,b;
+            ss >> a;
+            ss >> b;
+            f.emplace_back(Eigen::Vector2i(a,b));
+        }
+        else {
+            std::cerr << "Invalid line in "<<infileName<<"! Skipping line..." << std::endl;
+        }
+    }
+    infile.close();
+    
+    assert(v.size() == f.size());
+
+    m.verts = v;
+    m.faces = f;
+    m.update_neighbor_face_vecs();
+
+    return true;
 }
 
 bool SolidMesh::checkCollisionAndSnap(Eigen::Vector2d& curr_pt){
@@ -137,4 +189,12 @@ void SolidMesh::advectFE(double curr_t, double dt){
         verts[i] += vel_func(curr_t)*dt;
     }
     v_effective = vel_func(curr_t);//*dt;
+}
+
+void SolidMesh::advectFE(double dt){
+    assert(verts.size() == vels.size());
+    for (size_t i=0; i< verts.size(); i++){
+        v_effective = vels[i]*dt;
+        verts[i] += vels[i]*dt;
+    }
 }

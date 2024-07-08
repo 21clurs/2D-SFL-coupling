@@ -1,0 +1,21 @@
+scene oscillation_test
+radius 1
+
+time-step 0.005
+simulation-time 2
+gravity 0
+
+sigma-la 1
+sigma-sl 1
+sigma-sa 1
+rho 1
+    
+mesh-size-n 32
+mesh-remesh-on 0
+mesh-remesh-iters 0
+mesh-edge-max-ratio 1.1
+mesh-edge-min-ratio 0.9
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity zero

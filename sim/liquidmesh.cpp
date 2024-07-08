@@ -1,6 +1,16 @@
 #include "liquidmesh.h"
 #include <iostream>
 
+LiquidMesh::LiquidMesh() : Mesh(){
+    vels_solid = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));// defaults to purely liquid-air boundary?
+    
+    is_air = std::vector<bool>(verts.size(), true);
+    is_solid = std::vector<bool>(verts.size(), false);
+    is_triple = std::vector<bool>(verts.size(), false);
+
+    is_corner = std::vector<bool>(verts.size(), false);
+}
+
 LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) :
     Mesh(in_verts, in_faces) 
 {
@@ -13,8 +23,7 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
 
     is_corner = std::vector<bool>(verts.size(), false);
 
-    minFaceLength = 0.7*calc_avg_face_length();
-    maxFaceLength = 1.3*calc_avg_face_length();
+    reset_face_length_limits();
 }
 
 LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) :
@@ -29,14 +38,37 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
 
     is_corner = std::vector<bool>(verts.size(), false);
 
-    minFaceLength = 0.7*calc_avg_face_length();
-    maxFaceLength = 1.4*calc_avg_face_length();
+    reset_face_length_limits();
+}
+
+void LiquidMesh::resize_mesh(size_t n){
+    verts.resize(n);
+    faces.resize(n);
+    vels.resize(n);
+
+    vertsPrevFace.resize(n);
+    vertsNextFace.resize(n);
+
+    vels_solid.resize(n);
+    
+    is_air.resize(n);
+    is_solid.resize(n);
+    is_triple.resize(n);
+
+    is_corner.resize(n);
 }
 
 void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple){
     is_air = air;
     is_solid = solid;
     is_triple = triple;
+}
+
+void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple, std::vector<bool> corner){
+    is_air = air;
+    is_solid = solid;
+    is_triple = triple;
+    is_corner = corner;
 }
 
 void LiquidMesh::set_boundaries_for_vertex(int i, bool air, bool solid, bool triple, bool corner){
@@ -313,7 +345,10 @@ void LiquidMesh::reset_boundary_types(){
 
     is_corner = std::vector<bool>(is_corner.size(), false);
 }
-
+void LiquidMesh::reset_face_length_limits(){
+    minFaceLength = 0.7*calc_avg_face_length();
+    maxFaceLength = 1.3*calc_avg_face_length();
+}
 // returns the closest distance to the liquid mesh
 // returns a positive number if inside the mesh
 // returns a negative number if outside the mesh
