@@ -116,7 +116,20 @@ void LiquidMesh::edge_collapse(){
     std::vector<bool> faces_to_delete(faces.size(), false);
     for (size_t i=0; i<n_old; i++){
     //std::cout<<"Edge length: "<<face_length(i)<<std::endl;
-        if (face_length(i) < minFaceLength && !faces_to_delete[i]){
+        if (face_length(i) == 0 && !faces_to_delete[i]){ 
+            // NEED to delete this, and should not be disruptive to do so
+            n_collapse++;
+
+            int endpt_a_ind = faces[i].x();
+            int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+            
+            // merge current face with endpt_a_face (doesn't matter which endpoint, this is an arbitrary choice)
+            faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind);
+            verts_to_delete[endpt_a_ind] = true;
+            faces_to_delete[endpt_a_face] = true;
+
+        } else if (face_length(i) < minFaceLength && !faces_to_delete[i]){
+            // slightly more normal case
 
             int endpt_a_ind = faces[i].x();
             int endpt_b_ind = faces[i].y();
@@ -131,7 +144,6 @@ void LiquidMesh::edge_collapse(){
                 continue;
             }
 
-            //std::cout<<"WAHH"<<std::endl;
             n_collapse++;
 
             if (is_triple[endpt_b_ind] && !is_triple[endpt_a_ind]){

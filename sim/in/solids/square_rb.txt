@@ -8,8 +8,8 @@ f 1 2
 f 2 3
 f 3 0
 
-theta 0.0
+theta 0.5
 translation 0 0
 
-u_rotational 10
+u_rotational 2
 u_translational 0 0
