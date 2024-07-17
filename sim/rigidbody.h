@@ -34,6 +34,7 @@ class RigidBody : public SolidMesh
         void updatePerVertexVels();                  // updates the per-vertex velocities, based on the translational & rotational velocities
         void updateRigidBodyVars();         // something to quickly call to update all of Area, COM, MOI, rotation matrix
     
+        void collideAndSnap(LiquidMesh& l);
     public:
         static bool loadMeshFromFile(RigidBody &m, std::string infileName);
 

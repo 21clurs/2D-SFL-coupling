@@ -210,7 +210,9 @@ void TestingHelpers::testBEM(std::string shape, std::string fieldType, int n, st
     // step BEM
     Eigen::VectorXd p_test = Eigen::VectorXd::Zero(n);
     Eigen::VectorXd dpdn_test = Eigen::VectorXd::Zero(n);
-    s.step_BEM_solve(p_input, dpdn_input, p_test, dpdn_test);
+    std::vector<RigidBody*> dummyRB;
+    std::vector<Eigen::Vector3d> V_dummyRB;
+    s.step_BEM_solve(p_input, dpdn_input, p_test, dpdn_test, dummyRB, V_dummyRB);
 
     // calculate errors
     Eigen::VectorXd p_err_norms = Eigen::VectorXd::Zero(n);

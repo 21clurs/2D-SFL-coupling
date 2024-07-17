@@ -1,4 +1,4 @@
-scene semicircle_horizontal
+scene circle
 radius 1
 
 time-step 0.01
@@ -10,7 +10,7 @@ sigma-sl 1
 sigma-sa 1
 rho 1
     
-mesh-size-n 32
+mesh-size-n 64
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.1
 mesh-edge-min-ratio 0.9

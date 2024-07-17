@@ -15,6 +15,8 @@ using Eigen::Vector2i;
 bool Sim::setAndLoadSimOptions(std::string infileName){
     // set a bunch of default sim options
     SimOptions::addStringOption ("scene", "circle");
+    SimOptions::addStringOption ("scene-file", "");
+
     SimOptions::addDoubleOption ("time-step", 0.01);
     SimOptions::addDoubleOption ("simulation-time", 10.0);
     SimOptions::addDoubleOption ("gravity", 0);
@@ -68,7 +70,12 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
 
 void Sim::run(){
     // set up scene
-    Scenes::scene(this, SimOptions::strValue("scene"), SimOptions::strValue("mesh-initial-velocity"));
+    if (SimOptions::strValue("scene-file").length() > 0){
+        // loading initial liquid mesh from a file
+        Scenes::sceneFromFile(this, SimOptions::strValue("scene-file"), SimOptions::strValue("mesh-initial-velocity"));
+    } else {
+        Scenes::scene(this, SimOptions::strValue("scene"), SimOptions::strValue("mesh-initial-velocity"));
+    }
     
     // collide liquid mesh with all the solids and such
     collide();
@@ -83,11 +90,12 @@ void Sim::run(){
             SimOptions::doubleValue("markers-top"),
             SimOptions::doubleValue("markers-spacing")
         );
+        std::cout<<"Finished generating marker particles."<<std::endl;
     }
 
     // main sim loop
     double dt = SimOptions::doubleValue("time-step");
-    int frames = (int) SimOptions::doubleValue("simulation-time")/dt;
+    int frames = (int) (SimOptions::doubleValue("simulation-time")/dt);
     for (int i=0; i<frames; i++){
         // sim stuff
         outputFrame(std::to_string(i)+".txt");
@@ -121,7 +129,7 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     sigma_SL(1.0),
     sigma_SA(1.0),
     rho(1.0),
-    gravity(Eigen::Vector2d({0.0, -5.0}))
+    gravity(Eigen::Vector2d({0.0, 0.0}))
 {
     markerparticles = {};
 }
@@ -252,14 +260,12 @@ void Sim::step_sim(double curr_t){
 
     //step_solidinfluxreverse();
 
-    collide();
     remesh();
     //std::cout<<"post remesh vec "<<m.verts.size()<<std::endl;
     /*for (size_t i=0; i<m.verts.size(); i++){
         std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
     }
     std::cout<<std::endl;*/
-    //collide(); // remesh will collide things
 
     //outputFrame(std::to_string(1)+".txt");
 
@@ -320,6 +326,9 @@ void Sim::step_advect(double t){
     for (size_t i=0; i<rigidBodies.size(); i++){
         rigidBodies[i]->updatePerVertexVels();
         rigidBodies[i]->advectFE(dt);
+        /*for (size_t j=0; j<rigidBodies[i]->vels.size(); j++){
+            std::cout<<"("<<rigidBodies[i]->verts[j].x()<<", "<<rigidBodies[i]->verts[j].y()<<") "<<rigidBodies[i]->vels[j].x()<<" "<<rigidBodies[i]->vels[j].y()<<std::endl;
+        }*/
     }
     // "advect" the marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
@@ -522,9 +531,10 @@ void Sim::step_BEM(){
     Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
     Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
     // we are also trying to solve for V for each rigidbody
-    //std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies.size(), Eigen::Vector3d::Zero());
+    // although for now can just start with handling one rigidbody?
+    std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies.size(), Eigen::Vector3d::Zero());
 
-    step_BEM_solve(BC_p, BC_dpdn, p, dpdn);
+    step_BEM_solve(BC_p, BC_dpdn, p, dpdn, rigidBodies, V_rigidBodies);
     
     step_BEM_gradP(BC_p, BC_dpdn, p,dpdn);
 }
@@ -611,7 +621,7 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
     //std::cout<<"BC_dpdn: "<<BC_dpdn<<std::endl;
 }
 
-void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn){
+void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn, std::vector<RigidBody*>& rigidBodies, std::vector<Eigen::Vector3d>& V_rigidBodies){
     // BEM
     int N = m.verts.size();
     std::vector<bool> face_is_solid = m.get_solid_faces();
@@ -974,6 +984,7 @@ double Sim::cross2d(Eigen::Vector2d a, Eigen::Vector2d b){
 }
 
 void Sim::remesh(){
+    collide();
     for(size_t i=0; i<SimOptions::intValue("mesh-remesh-iters"); i++){
         m.remesh();
         collide();
@@ -982,14 +993,14 @@ void Sim::remesh(){
 }
 
 void Sim::collide(){
-
-    // collide liquid mesh with each solid
     // then recalibrate triple points
 
     m.reset_boundary_types();
+    // collide liquid mesh with each solid
     for (size_t i=0; i<solids.size(); i++){
         solids[i]->collideAndSnap(m);
     }
+    // collide liquid mesh with each rigidBody
     for (size_t i=0; i<rigidBodies.size(); i++){
         rigidBodies[i]->collideAndSnap(m);
     }

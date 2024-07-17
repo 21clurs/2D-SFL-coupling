@@ -175,6 +175,19 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
     setupSceneShape(sim->m, scenename);
     setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
 
+    setupSceneSolids(sim);
+}
+
+void Scenes::sceneFromFile(Sim * const &sim, const std::string & filename, const std::string & initialvelocity){
+    int N = sim->n;
+    sim->m.resize_mesh(N);
+
+    setupSceneShapeFromFile(sim->m, filename);
+    setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
+    setupSceneSolids(sim);
+}
+
+void Scenes::setupSceneSolids(Sim * const &sim){
     // TODO: make this better
     if (SimOptions::intValue("num-solids") == 1){
         SolidMesh *m = new SolidMesh();
@@ -303,6 +316,32 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
     m.set_boundaries(air, solid, triple, corner);
     
+}
+
+void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename){
+    LiquidMesh::loadMeshFromFile(m, filename);
+    
+    int N = m.verts.size();
+
+    m.reset_boundary_types();
+    m.vels = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
+    m.vels_solid = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
+    m.is_corner = std::vector<bool>(N, false);
+    m.is_solid_rb = std::vector<bool>(m.verts.size(), false);
+    m.reset_face_length_limits(); // this is fairly important to set!
+
+    // double checking
+    assert(N == m.verts.size());
+    assert(N == m.vels.size());
+    assert(N == m.faces.size());
+    assert(N == m.vertsPrevFace.size());
+    assert(N == m.vertsNextFace.size());
+    assert(N == m.vels_solid.size());
+    assert(N == m.is_air.size());
+    assert(N == m.is_solid.size());
+    assert(N == m.is_triple.size());
+    assert(N == m.is_corner.size());
+    assert(N == m.is_solid_rb.size());
 }
 
 void Scenes::setupSceneVelocities(std::vector<Eigen::Vector2d> & verts, std::vector<Eigen::Vector2d> & vels, const std::string & initialvelocity){

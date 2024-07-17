@@ -1,5 +1,7 @@
 #include "liquidmesh.h"
+#include <fstream>
 #include <iostream>
+#include "simoptions.h"
 
 LiquidMesh::LiquidMesh() : Mesh(){
     vels_solid = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));// defaults to purely liquid-air boundary?
@@ -9,6 +11,7 @@ LiquidMesh::LiquidMesh() : Mesh(){
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
+    is_solid_rb = std::vector<bool>(verts.size(), false);
 }
 
 LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) :
@@ -22,6 +25,7 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
+    is_solid_rb = std::vector<bool>(verts.size(), false);
 
     reset_face_length_limits();
 }
@@ -37,6 +41,7 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
+    is_solid_rb = std::vector<bool>(verts.size(), false);
 
     reset_face_length_limits();
 }
@@ -56,6 +61,7 @@ void LiquidMesh::resize_mesh(size_t n){
     is_triple.resize(n);
 
     is_corner.resize(n);
+    is_solid_rb.resize(n);
 }
 
 void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple){
@@ -221,6 +227,8 @@ void LiquidMesh::edge_collapse(){
 
         std::vector<bool> is_corner_remeshed;
         is_corner_remeshed.reserve(n_old-n_collapse);
+        std::vector<bool> is_solid_rb_remeshed;
+        is_solid_rb_remeshed.reserve(n_old-n_collapse);
 
         std::unordered_map<size_t, int> verts_map; // maps old to new verts
 
@@ -236,6 +244,7 @@ void LiquidMesh::edge_collapse(){
                 is_triple_remeshed.push_back(is_triple[i]);
 
                 is_corner_remeshed.push_back(is_corner[i]);
+                is_solid_rb_remeshed.push_back(is_solid_rb[i]);
             } else{
                 verts_map[i] = -1;
             }
@@ -265,6 +274,7 @@ void LiquidMesh::edge_collapse(){
         is_triple = is_triple_remeshed;
 
         is_corner = is_corner_remeshed;
+        is_solid_rb = is_solid_rb_remeshed;
     }
     assert(faces.size() == n_old - n_collapse);
     assert(verts.size() == n_old - n_collapse);
@@ -276,6 +286,7 @@ void LiquidMesh::edge_collapse(){
     assert(is_triple.size() == verts.size());
 
     assert(is_corner.size() == verts.size());
+    assert(is_solid_rb.size() == verts.size());
 
     update_neighbor_face_vecs();
     
@@ -306,12 +317,19 @@ void LiquidMesh::edge_split(){
                 is_triple.push_back(false);
 
                 is_corner.push_back(false);
+                // TODO: check on this
+                if(is_solid_rb[verts_from_face(i).x()] || is_solid_rb[verts_from_face(i).y()]){
+                    is_solid_rb.push_back(true);
+                } else{
+                    is_solid_rb.push_back(false);
+                }
             } else{
                 is_air.push_back(true);
                 is_solid.push_back(false);
                 is_triple.push_back(false);
 
                 is_corner.push_back(false);
+                is_solid_rb.push_back(false);
             }
         }
     }
@@ -325,6 +343,7 @@ void LiquidMesh::edge_split(){
     assert(is_triple.size() == verts.size());
 
     assert(is_corner.size() == verts.size());
+    assert(is_solid_rb.size() == verts.size());
     
     update_neighbor_face_vecs();
 }
@@ -356,10 +375,11 @@ void LiquidMesh::reset_boundary_types(){
     is_triple = std::vector<bool>(is_triple.size(), false);
 
     is_corner = std::vector<bool>(is_corner.size(), false);
+    is_solid_rb = std::vector<bool>(is_solid_rb.size(), false);
 }
 void LiquidMesh::reset_face_length_limits(){
-    minFaceLength = 0.7*calc_avg_face_length();
-    maxFaceLength = 1.3*calc_avg_face_length();
+    minFaceLength = SimOptions::doubleValue("mesh-edge-min-ratio")*calc_avg_face_length();
+    maxFaceLength = SimOptions::doubleValue("mesh-edge-max-ratio")*calc_avg_face_length();
 }
 // returns the closest distance to the liquid mesh
 // returns a positive number if inside the mesh
@@ -404,4 +424,65 @@ double LiquidMesh::signed_min_dist(Eigen::Vector2d x){
     } else{
         return -1*abs(min_d);
     }
+}
+
+bool LiquidMesh::loadMeshFromFile(LiquidMesh &m, std::string infileName){
+    // load liquid mesh file
+    std::ifstream infile(infileName);
+    if (!infile.is_open()) { 
+        std::cerr << "Unable to open liquid file "<<infileName<<"!" << std::endl; 
+        assert(!"Unable to open liquid mesh file!");
+    }
+
+    std::vector<Eigen::Vector2d> v;
+    std::vector<Eigen::Vector2i> f;
+    std::vector<Eigen::Vector2d> u;
+
+    std::string line;
+    while(!infile.eof()){
+        std::getline(infile, line);
+        std::stringstream ss(line);
+
+        std::string linetype;
+        ss >> linetype;
+        if (linetype == "#" || linetype == "//" || linetype == "" || ss.eof())    // skip comment lines and empty lines
+            continue;
+        
+        if (linetype.compare("v") == 0){
+            double a,b;
+            ss >> a;
+            ss >> b;
+            v.emplace_back(Eigen::Vector2d(a,b));
+        } else if (linetype.compare("f") == 0){
+            int a,b;
+            ss >> a;
+            ss >> b;
+            f.emplace_back(Eigen::Vector2i(a,b));
+        } else if (linetype.compare("u") == 0){
+            double a,b;
+            ss >> a;
+            ss >> b;
+            u.emplace_back(Eigen::Vector2d(a,b));
+        }
+        else {
+            std::cerr << "Invalid line in "<<infileName<<"! Skipping line..." << std::endl;
+        }
+    }
+    infile.close();
+    
+    assert(v.size() == f.size());
+
+    m.resize_mesh(v.size());
+
+    m.verts = v;
+    m.faces = f;
+    m.update_neighbor_face_vecs();
+
+    // inputting per-vertex velocity is optional
+    if (u.size() > 0){
+        assert(u.size() == v.size());
+        m.vels = u;
+    }
+
+    return true;
 }

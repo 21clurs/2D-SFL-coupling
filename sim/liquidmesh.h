@@ -10,6 +10,7 @@ class LiquidMesh : public Mesh
     friend class Sim;
     friend class Scenes;
     friend class SolidMesh;
+    friend class RigidBody;
     friend class TestingHelpers;
     protected:
         std::vector<Eigen::Vector2d> vels_solid;
@@ -37,12 +38,15 @@ class LiquidMesh : public Mesh
         double signed_min_dist(Eigen::Vector2d x);
 
         void resize_mesh(size_t n);
+
+        static bool loadMeshFromFile(LiquidMesh &l, std::string infileName);
     private:
         std::vector<bool> is_air;
         std::vector<bool> is_solid;
         std::vector<bool> is_triple;
 
         std::vector<bool> is_corner;
+        std::vector<bool> is_solid_rb;
 
         void update_triple_points();
 

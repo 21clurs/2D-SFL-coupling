@@ -1,15 +1,15 @@
-v -.25 -.25
-v .25 -.25
-v .25 .25
-v -.25 .25
+v -.5 -.2
+v .5 -.2
+v .5 .2
+v -.5 .2
 
 f 0 1
 f 1 2
 f 2 3
 f 3 0
 
-theta 0.5
+// theta 0.5
 translation 0 0
 
-u_rotational 2
+u_rotational 1
 u_translational 0 0

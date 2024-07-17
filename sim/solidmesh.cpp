@@ -57,7 +57,7 @@ bool SolidMesh::loadMeshFromFile(SolidMesh &m, std::string infileName){
     m.verts = v;
     m.faces = f;
     m.update_neighbor_face_vecs();
-    
+
     m.vels.resize(v.size());
 
     return true;
@@ -171,6 +171,7 @@ void SolidMesh::collideAndSnap(LiquidMesh& l){
             }
         }
 
+        // Collision detected!!
         // since winding number when precisely on the segment is a bit misbehaved
         // we define 'collision' as when min_d is less than our epsilon OR when the winding number is nonzero
         // as a nonzero winding number indicates that we are intersecting the mesh

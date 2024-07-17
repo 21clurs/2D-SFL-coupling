@@ -1,4 +1,5 @@
-scene donut
+// scene donut
+scene-file ./in/liquids/donut_with_rect.txt
 
 time-step 0.005
 simulation-time 4
@@ -8,11 +9,11 @@ sigma-la 1
 sigma-sl 1
 sigma-sa 1
 rho 1
-    
-mesh-size-n 40
+ 
+mesh-size-n 96
 mesh-remesh-iters 6
-mesh-edge-max-ratio 1.1
-mesh-edge-min-ratio 0.9
+mesh-edge-max-ratio 1.3
+mesh-edge-min-ratio 0.7
 
 mesh-collision-epsilon 0.01
 
