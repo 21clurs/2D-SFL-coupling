@@ -125,6 +125,9 @@ namespace {
         }
     }
     void gen_square_donut(int n, const Eigen::Vector2d& center, double sideLength_inner, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        v.resize(n);
+        f.resize(n);
+        
         double ratio = sideLength_outer/sideLength_inner;
 
         int n_inner = n/(ratio+1);
@@ -165,6 +168,33 @@ namespace {
         }
         for(size_t i=0; i<n_inner; i++)
             f[n_outer + i] = Eigen::Vector2i(n_outer + (i+1)%n_inner, n_outer + i);
+    }
+    void gen_generic_donut(int n, const Eigen::Vector2d& center, double r_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+        // creates a rough circular donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+        
+        // assumes just one rigid body that this donut spawns around
+        assert(SimOptions::intValue("num-rb") == 1);
+        RigidBody *m = new RigidBody();
+        RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
+
+        int n_inner = m->verts.size();
+        for (size_t i=0; i<n_inner; i++){
+            v[i] = m->verts[i];
+            f[i] = Eigen::Vector2i(m->faces[i].y(),m->faces[i].x());
+        }
+
+        // then the circle
+        int n_outer = n - n_inner;
+        float theta = 2*M_PI/n_outer;
+        for (size_t i=0; i<n_outer; i++){
+            v[i+n_inner].x() = r_outer*cos(theta*i) + center.x();
+            v[i+n_inner].y() = r_outer*sin(theta*i) + center.y();
+
+            f[i+n_inner][0] = n_inner + i;
+            f[i+n_inner][1] = n_inner + (i+1)%n_outer;
+        }
     }
 }
 
@@ -296,7 +326,12 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
         gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
 
-    } else {
+    } else if (scenename == "generic_donut"){
+        double r_outer = SimOptions::doubleValue("radius-outer");
+
+        gen_generic_donut(N, Eigen::Vector2d(0.0,0.0), r_outer, v, f);
+
+    }else {
         std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
         return;
     }
@@ -372,6 +407,18 @@ void Scenes::setupSceneVelocities(std::vector<Eigen::Vector2d> & verts, std::vec
         for (size_t i=0; i<N; i++){
             u[i].x() = 0;
             u[i].y() = verts[i].y();
+        }
+    } else if (initialvelocity == "rotational_cw"){
+        // (y,-x)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = verts[i].y();
+            u[i].y() = -verts[i].x();
+        }
+    } else if (initialvelocity == "rotational_ccw"){
+        // (-y,x)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = -verts[i].y();
+            u[i].y() = verts[i].x();
         }
     } else if (initialvelocity == "harmonic_1"){
         // (y,x)

@@ -19,7 +19,7 @@ bool SolidMesh::loadMeshFromFile(SolidMesh &m, std::string infileName){
     std::ifstream infile(infileName);
     if (!infile.is_open()) { 
         std::cerr << "Unable to open solid file "<<infileName<<"!" << std::endl; 
-        assert(!"Unable to open options file!");
+        assert(!"Unable to open solid file!");
     }
 
     std::vector<Eigen::Vector2d> v;

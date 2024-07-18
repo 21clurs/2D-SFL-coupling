@@ -93,6 +93,9 @@ void Sim::run(){
         std::cout<<"Finished generating marker particles."<<std::endl;
     }
 
+    // just to make the spacing of the liquid mesh nice and stuff
+    remesh();
+
     // main sim loop
     double dt = SimOptions::doubleValue("time-step");
     int frames = (int) (SimOptions::doubleValue("simulation-time")/dt);
@@ -266,8 +269,6 @@ void Sim::step_sim(double curr_t){
         std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
     }
     std::cout<<std::endl;*/
-
-    //outputFrame(std::to_string(1)+".txt");
 
     //std::cout<<"post collide vec "<<m.verts.size()<<std::endl;
     /*for (size_t i=0; i<m.verts.size(); i++){
