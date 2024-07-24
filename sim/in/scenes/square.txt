@@ -1,5 +1,6 @@
-scene circle
-radius 1
+scene rectangle
+width 1
+height 1
 
 time-step 0.01
 simulation-time 4
@@ -17,7 +18,7 @@ mesh-edge-min-ratio 0.9
 
 mesh-collision-epsilon 0.01
 
-mesh-initial-velocity linear_x
+mesh-initial-velocity zero
 
 show-marker-particles 1
 markers-left -1.0

@@ -12,4 +12,4 @@ u_rotational 5
 u_translational 0 0
 
 # omit rho for infinite density!
-rho 1
+# rho 1

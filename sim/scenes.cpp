@@ -245,8 +245,6 @@ void Scenes::setupSceneSolids(Sim * const &sim){
     if (SimOptions::intValue("num-rb") == 1){
         RigidBody *r = new RigidBody();
         RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-1"));
-        r->updateRigidBodyVars();
-        r->updateVerts();
         sim->addRigidBody(r);
     }
 }

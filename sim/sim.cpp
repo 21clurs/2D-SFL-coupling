@@ -828,6 +828,37 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     Eigen::VectorXd soln = solver.solve(rhs);
     */
 
+    // constructing the different block parts of the modified A, rhs to deal with two-way coupling
+    /*
+    Eigen::MatrixXd A_topright = Eigen::MatrixXd::Zero(N, 3*rigidBodies.size());
+    Eigen::MatrixXd A_bottomleft = Eigen::MatrixXd::Zero(3*rigidBodies.size(), N);
+    Eigen::MatrixXd A_bottomright = Eigen::MatrixXd::Zero(3*rigidBodies.size(), 3*rigidBodies.size());
+    Eigen::VectorXd rhs_tail = Eigen::VectorXd::Zero(3*rigidBodies.size());
+
+    for (size_t k=0; k<rigidBodies.size(); k++){
+        if (rigidBodies[k]->mass == INFINITY){
+
+        }
+        for (size_t i=0; i<N; i++){
+            Eigen::Vector2d n_i = -m.calc_vertex_normal(i); // not maybe the most foolproof way? but a way...
+            Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies[0]->com, n_i));
+
+            double G_ii = collocB_solid(i,i) + collocB_air(i,i);
+            A_topright.block(i,k*3,1,3) = G_ii * rho * J.transpose();
+
+            if (m.is_solid_rb[i]){
+                A_bottomleft.block(k*3,i,3,1) = J;
+            }
+        }
+        Eigen::Matrix3d M = Eigen::Matrix3d::Zero();
+        M.diagonal() = Eigen::Vector3d(rigidBodies[k]->mass, rigidBodies[k]->mass, rigidBodies[k]->moi);
+        A_bottomright.block(k*3,k*3,3,3) =  (-1.0/dt) * M;
+
+        rhs_tail.segment(3*k,3) = (-1.0/dt) * M * (rigidBodies[k]->retrieveRigidBodyV());
+    }
+    */
+
+    /*
     // Modifications to A and rhs to deal with two-way coupling of rigid bodies
     size_t N_rb = N + 3*rigidBodies.size();
     Eigen::MatrixXd A_rb = Eigen::MatrixXd::Zero(N_rb, N_rb);
@@ -879,13 +910,14 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         }
     }
     //std::cout<<"here too\n"<<A_rb<<std::endl;
-
+    */
+   
     // linear solve
     // DIRECT - LU
     //Eigen::VectorXd soln = A_rb.lu().solve(rhs_rb);
     // ITERATIVE - BICGSTAB
-    Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A_rb);
-    Eigen::VectorXd soln = solver.solve(rhs_rb);
+    Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A);
+    Eigen::VectorXd soln = solver.solve(rhs);
 
     //std::cout<<"x: "<<soln<<std::endl;
         

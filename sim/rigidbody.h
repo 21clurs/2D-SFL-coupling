@@ -9,8 +9,7 @@
 class RigidBody : public SolidMesh
 {
     public:
-        double area;                    
-        double rho;                     // density
+        double mass;                    // rho * area
         Eigen::Vector2d com;            // center of mass
         double moi;                     // moment of inertia about the COM
 
@@ -20,8 +19,6 @@ class RigidBody : public SolidMesh
         RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels);
 
         // setters
-        void setRotation(double theta);
-        void setTranslation(Eigen::Vector2d t);
         void setRigidBodyV(Eigen::Vector3d V_in);
         void setRigidBodyV(Eigen::Vector2d V_t_in, double V_omega_in);
         void setRigidBodyV(double V_t_x, double V_t_y, double V_omega_in);
@@ -33,13 +30,14 @@ class RigidBody : public SolidMesh
 
         void updateVerts();                 // updates the world coordinates (stored in verts), based on the translation & rotation
         void updatePerVertexVels();                  // updates the per-vertex velocities, based on the translational & rotational velocities
-        void updateRigidBodyVars();         // something to quickly call to update all of Area, COM, MOI, rotation matrix
-    
+
         void collideAndSnap(LiquidMesh& l);
     public:
         static bool loadMeshFromFile(RigidBody &m, std::string infileName);
 
     protected:
+        double area;                    
+        double rho;                     // density
         // the coordinates of the RigidBody without any of the rotation/translation
         // the vertices of the RigidBody with its transformations applied are stored in verts (field inherited from Mesh)
         std::vector<Eigen::Vector2d> verts_no_transform; 
@@ -51,10 +49,8 @@ class RigidBody : public SolidMesh
         double V_omega;                     // RigidBody rotational velocity
 
         void calculateArea();
-        void calculateCOM();
+        void updateCOM();
         void calculateMOI();
-
-        void updateRotationMat();
 };
 
 #endif

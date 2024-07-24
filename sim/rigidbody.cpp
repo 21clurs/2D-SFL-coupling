@@ -10,8 +10,11 @@ RigidBody::RigidBody() : SolidMesh(){
     translation = Eigen::Vector2d(0,0);
     V_t = Eigen::Vector2d(0,0);
     V_omega = 0;
-    updateRigidBodyVars();
+    calculateArea();
+    updateCOM();
+    calculateMOI();
     updateVerts();
+    mass = rho*area;
 }
 
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : SolidMesh(in_verts, in_faces){
@@ -21,8 +24,11 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
     translation = Eigen::Vector2d(0,0);
     V_t = Eigen::Vector2d(0,0);
     V_omega = 0;
-    updateRigidBodyVars();
+    calculateArea();
+    updateCOM();
+    calculateMOI();
     updateVerts();
+    mass = rho*area;
 }
 
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : SolidMesh(in_verts, in_faces, in_vels){
@@ -32,42 +38,34 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
     translation = Eigen::Vector2d(0,0);
     V_t = Eigen::Vector2d(0,0);
     V_omega = 0;
-    updateRigidBodyVars();
+    calculateArea();
+    updateCOM();
+    calculateMOI();
     updateVerts();
-}
-
-void RigidBody::setRotation(double theta){
-    rotationTheta = theta;
-    updateVerts();
-}
-void RigidBody::setTranslation(Eigen::Vector2d t){
-    translation = t;
-    updateVerts();
+    mass = rho*area;
 }
 
 void RigidBody::setRigidBodyV(Eigen::Vector3d V_in) {
-    V_t = Eigen::Vector2d(V_in.x(), V_in.y()); V_omega = V_in.z();
+    V_t = Eigen::Vector2d(V_in.x(), V_in.y());
+    V_omega = V_in.z();
     updatePerVertexVels();
 }
 void RigidBody::setRigidBodyV(Eigen::Vector2d V_t_in, double V_omega_in) {
-    V_t = V_t_in; V_omega = V_omega_in;
+    V_t = V_t_in;
+    V_omega = V_omega_in;
     updatePerVertexVels();
 }
 void RigidBody::setRigidBodyV(double V_t_x, double V_t_y, double V_omega_in) {
-    V_t = Eigen::Vector2d(V_t_x, V_t_y); V_omega = V_omega_in;
+    V_t = Eigen::Vector2d(V_t_x, V_t_y);
+    V_omega = V_omega_in;
     updatePerVertexVels();
 }
 
 void RigidBody::advectFE(double dt){
-    setTranslation(translation + V_t*dt);
-    setRotation(rotationTheta +  V_omega*dt);
+    translation = translation + V_t*dt;
+    rotationTheta = rotationTheta +  V_omega*dt;
     updateVerts();
-}
-
-void RigidBody::updateRigidBodyVars(){
-    calculateArea();
-    calculateCOM();
-    calculateMOI();
+    updateCOM(); 
 }
 
 void RigidBody::calculateArea(){
@@ -80,7 +78,7 @@ void RigidBody::calculateArea(){
     area = abs(0.5*sum);
 }
 
-void RigidBody::calculateCOM(){
+void RigidBody::updateCOM(){
     double sum_x = 0;
     double sum_y = 0;
     for (size_t i = 0; i<faces.size(); i++){
@@ -108,7 +106,7 @@ void RigidBody::calculateMOI(){
     }
     I_x /= 12;
     I_y /= 12;
-    moi = abs(I_x + I_y); // placeholder
+    moi = rho * abs(I_x + I_y);
 }
 
 void RigidBody::updateVerts(){
@@ -286,14 +284,17 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
     assert(v.size() == f.size());
 
     m.verts_no_transform = v;
-    m.verts = v;
     m.faces = f;
     m.update_neighbor_face_vecs();
+    m.updateVerts();
 
     m.vels.resize(v.size());
     
-    m.updateRigidBodyVars();
-    m.updateVerts();
+    m.calculateArea();
+    m.mass = m.rho*m.area;
+    
+    m.updateCOM();
+    m.calculateMOI();
     m.updatePerVertexVels();
 
     return true;
