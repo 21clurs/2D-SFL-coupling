@@ -4,6 +4,7 @@
 #include "sim.h"
 
 RigidBody::RigidBody() : SolidMesh(){
+    rho = INFINITY;
     verts_no_transform = std::vector<Eigen::Vector2d>(0, Eigen::Vector2d(0.0, 0.0));
     rotationTheta = 0;
     translation = Eigen::Vector2d(0,0);
@@ -14,6 +15,7 @@ RigidBody::RigidBody() : SolidMesh(){
 }
 
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : SolidMesh(in_verts, in_faces){
+    rho = INFINITY;
     verts_no_transform = in_verts;
     rotationTheta = 0;
     translation = Eigen::Vector2d(0,0);
@@ -24,6 +26,7 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
 }
 
 RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : SolidMesh(in_verts, in_faces, in_vels){
+    rho = INFINITY;
     verts_no_transform = in_verts;
     rotationTheta = 0;
     translation = Eigen::Vector2d(0,0);
@@ -31,6 +34,28 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
     V_omega = 0;
     updateRigidBodyVars();
     updateVerts();
+}
+
+void RigidBody::setRotation(double theta){
+    rotationTheta = theta;
+    updateVerts();
+}
+void RigidBody::setTranslation(Eigen::Vector2d t){
+    translation = t;
+    updateVerts();
+}
+
+void RigidBody::setRigidBodyV(Eigen::Vector3d V_in) {
+    V_t = Eigen::Vector2d(V_in.x(), V_in.y()); V_omega = V_in.z();
+    updatePerVertexVels();
+}
+void RigidBody::setRigidBodyV(Eigen::Vector2d V_t_in, double V_omega_in) {
+    V_t = V_t_in; V_omega = V_omega_in;
+    updatePerVertexVels();
+}
+void RigidBody::setRigidBodyV(double V_t_x, double V_t_y, double V_omega_in) {
+    V_t = Eigen::Vector2d(V_t_x, V_t_y); V_omega = V_omega_in;
+    updatePerVertexVels();
 }
 
 void RigidBody::advectFE(double dt){
@@ -52,15 +77,15 @@ void RigidBody::calculateArea(){
         Eigen::Vector2d v_b = verts_no_transform[verts_from_face(i)[1]];
         sum += v_a.x()*v_b.y() - v_b.x()*v_a.y();
     }
-    area = 0.5*sum;
+    area = abs(0.5*sum);
 }
 
 void RigidBody::calculateCOM(){
     double sum_x = 0;
     double sum_y = 0;
     for (size_t i = 0; i<faces.size(); i++){
-        Eigen::Vector2d v_a = verts_no_transform[verts_from_face(i)[0]];
-        Eigen::Vector2d v_b = verts_no_transform[verts_from_face(i)[1]];
+        Eigen::Vector2d v_a = verts[verts_from_face(i)[0]];
+        Eigen::Vector2d v_b = verts[verts_from_face(i)[1]];
         sum_x += (v_a.x()+v_b.x()) * (v_a.x()*v_b.y() - v_b.x()*v_a.y());
         sum_y += (v_a.y()+v_b.y()) * (v_a.x()*v_b.y() - v_b.x()*v_a.y());
     }
@@ -83,7 +108,7 @@ void RigidBody::calculateMOI(){
     }
     I_x /= 12;
     I_y /= 12;
-    moi = I_x + I_y; // placeholder
+    moi = abs(I_x + I_y); // placeholder
 }
 
 void RigidBody::updateVerts(){
@@ -196,6 +221,7 @@ void RigidBody::collideAndSnap(LiquidMesh& l){
             // snap the point to the nearest face
             l.verts[j] = nearest_pt;
             // set effective velocity
+            l.is_solid[j] = true;
             l.is_solid_rb[j] = true;
             l.vels_solid[j] = V_t + V_omega*Eigen::Vector2d(-(l.verts[j]-com).y(),(l.verts[j]-com).x());
             l.set_boundaries_for_vertex(j, false, true, false, pt_snapped_to_solid_corner);
@@ -248,6 +274,8 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
             ss >> a;
             ss >> b;
             m.V_t = Eigen::Vector2d(a,b);
+        } else if (linetype.compare("rho") == 0){
+            ss >> m.rho;
         }
         else {
             std::cerr << "Invalid line in "<<infileName<<"! Skipping line..." << std::endl;

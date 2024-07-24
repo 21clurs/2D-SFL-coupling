@@ -17,4 +17,11 @@ mesh-edge-min-ratio 0.9
 
 mesh-collision-epsilon 0.01
 
-mesh-initial-velocity zero
+mesh-initial-velocity rotational_cw
+
+show-marker-particles 1
+markers-left -1.0
+markers-right 1.0
+markers-bottom -1.0
+markers-top 1.0
+markers-spacing 0.1

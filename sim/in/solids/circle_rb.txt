@@ -28,5 +28,5 @@ f 12 11
 f 13 12
 f 0 13
 
-u_rotational 2
+u_rotational 0
 u_translational 0 0

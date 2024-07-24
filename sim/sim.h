@@ -36,7 +36,7 @@ class Sim
         void collide();
 
         void genMarkerParticles(double l, double r, double b, double t, double spacing);
-        Eigen::Vector2d HHD_FD(Eigen::Vector2d x, double delta); 
+        Eigen::Vector2d HHD_interior(Eigen::Vector2d x, double delta); 
         std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
 
         static bool setAndLoadSimOptions(std::string infileName);
@@ -65,9 +65,9 @@ class Sim
         double M_2(double t);
 
         void step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn);
-        void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn, std::vector<RigidBody*>& rigidBodies, std::vector<Eigen::Vector3d>& V_rigidBodies);
+        void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn, std::vector<Eigen::Vector3d>& V_rigidBodies);
         void step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn);
-
+        void step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies);
 };
 
 #endif

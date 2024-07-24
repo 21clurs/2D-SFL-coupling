@@ -1,0 +1,15 @@
+v 0.5 0
+v 0 0.5
+v -0.5 0
+v 0 -0.5
+
+f 0 1
+f 1 2
+f 2 3
+f 3 0
+
+u_rotational 5
+u_translational 0 0
+
+# omit rho for infinite density!
+rho 1
