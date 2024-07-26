@@ -28,8 +28,8 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
 
     SimOptions::addIntegerOption ("mesh-size-n", 32);
     SimOptions::addIntegerOption ("mesh-remesh-iters", 0);
-    SimOptions::addDoubleOption ("mesh-edge-max-ratio", 1.1);
-    SimOptions::addDoubleOption ("mesh-edge-min-ratio", 0.9);
+    SimOptions::addDoubleOption ("mesh-edge-max-ratio", 1.3);
+    SimOptions::addDoubleOption ("mesh-edge-min-ratio", 0.7);
 
     SimOptions::addDoubleOption ("mesh-collision-epsilon", 0.9);
 
@@ -76,7 +76,6 @@ void Sim::run(){
     } else {
         Scenes::scene(this, SimOptions::strValue("scene"), SimOptions::strValue("mesh-initial-velocity"));
     }
-    
     // collide liquid mesh with all the solids and such
     collide();
     
@@ -538,7 +537,7 @@ void Sim::step_BEM(){
     std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies.size(), Eigen::Vector3d::Zero());
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn, V_rigidBodies);
     step_BEM_gradP(BC_p, BC_dpdn, p,dpdn);
-    step_BEM_rigidBodyV(V_rigidBodies);
+    //step_BEM_rigidBodyV(V_rigidBodies);
 }
 
 void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
@@ -568,7 +567,8 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             // for rigid body contact, we treat it a little differently than a scripted/fixed solid contact
             // TODO: consolidate this so that it is nicer...
             if (m.is_solid_rb[i]){
-                BC_dpdn[i] = n_i.dot(m.vels[i]) * rho;
+                //BC_dpdn[i] = n_i.dot(m.vels[i]) * rho;
+                BC_dpdn[i] = n_i.dot(m.vels[i] - m.vels_solid[i]) * rho; // INCORRECT TREATMENT, but placeholder for testing
             } else {
                 //BC_dpdn[i] = n_i.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho;
                 BC_dpdn[i] = n_i.dot(m.vels[i] - m.vels_solid[i]) * rho;
@@ -790,11 +790,12 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         collocA(i,i) = omega_i - collocA.row(i).sum(); 
     }
 
-    /*
-    std::cout<<"collocA: "<<collocA<<std::endl;
-    std::cout<<"collocB_air: "<<collocB_air<<std::endl;
-    std::cout<<"collocB_solid: "<<collocB_solid<<std::endl;
+    /*    
+    std::cout<<"collocA (dGdn): "<<collocA<<std::endl;
+    std::cout<<"collocB_air (G): "<<collocB_air<<std::endl;
+    std::cout<<"collocB_solid (G): "<<collocB_solid<<std::endl;
     */
+
     // re-arranging
     for (size_t i=0; i<N; i++){
         double omega_i = m.solid_angle(i) * negOneOver2pi;
@@ -803,6 +804,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             rhs_per_vertex.col(i) = -collocA.col(i) * BC_p[i];
             rhs_per_vertex(i,i) += omega_i*BC_p[i];
         } else if (m.is_solid_rb[i]){
+            // TODO: review if this needs special treatment here, if not, get rid of this !!
             A.col(i) = collocA.col(i);
             rhs_per_vertex.col(i) = (collocB_solid.col(i) + collocB_air.col(i)) * BC_dpdn[i];
             A(i,i) += -omega_i;
@@ -819,6 +821,10 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         }
     }
     Eigen::VectorXd rhs = rhs_per_vertex.rowwise().sum();
+
+    //std::cout<<"A: \n"<<A<<std::endl;
+    //std::cout<<"rhs: \n"<<rhs<<std::endl;
+
     /*
     // linear solve
     // DIRECT - LU
@@ -829,22 +835,29 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     */
 
     // constructing the different block parts of the modified A, rhs to deal with two-way coupling
-    /*
+    
     Eigen::MatrixXd A_topright = Eigen::MatrixXd::Zero(N, 3*rigidBodies.size());
     Eigen::MatrixXd A_bottomleft = Eigen::MatrixXd::Zero(3*rigidBodies.size(), N);
     Eigen::MatrixXd A_bottomright = Eigen::MatrixXd::Zero(3*rigidBodies.size(), 3*rigidBodies.size());
     Eigen::VectorXd rhs_tail = Eigen::VectorXd::Zero(3*rigidBodies.size());
 
+    size_t rb_scripted_count = 0;
+    size_t rb_unscripted_count = 0;
     for (size_t k=0; k<rigidBodies.size(); k++){
+        //std::cout<<"MASS: "<<rigidBodies[k]->mass<<std::endl;
         if (rigidBodies[k]->mass == INFINITY){
-
+            //std::cout<<"Infinite-mass rigid body :)"<<std::endl;
+            rb_scripted_count++;
+        } else{
+            rb_unscripted_count++;
         }
         for (size_t i=0; i<N; i++){
             Eigen::Vector2d n_i = -m.calc_vertex_normal(i); // not maybe the most foolproof way? but a way...
             Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies[0]->com, n_i));
 
-            double G_ii = collocB_solid(i,i) + collocB_air(i,i);
-            A_topright.block(i,k*3,1,3) = G_ii * rho * J.transpose();
+            double G_sum = collocB_solid.row(i).sum();
+
+            A_topright.block(i,k*3,1,3) = G_sum * rho * J.transpose();
 
             if (m.is_solid_rb[i]){
                 A_bottomleft.block(k*3,i,3,1) = J;
@@ -856,7 +869,32 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 
         rhs_tail.segment(3*k,3) = (-1.0/dt) * M * (rigidBodies[k]->retrieveRigidBodyV());
     }
+    /*
+    std::cout<<"A_topright: \n"<<A_topright<<std::endl;
+    std::cout<<"A_bottomleft: \n"<<A_bottomleft<<std::endl;
+    std::cout<<"A_bottomright: \n"<<A_bottomright<<std::endl;
     */
+    size_t N_rb = N + 3*rb_unscripted_count;
+    Eigen::MatrixXd A_rb = Eigen::MatrixXd::Zero(N_rb, N_rb);
+    Eigen::VectorXd rhs_rb = Eigen::VectorXd::Zero(N_rb);
+    // copy A matrix into upper left NxN block
+    A_rb.block(0,0,N,N) = A;
+    // copy rhs into the top of rhs_rb
+    rhs_rb.head(N) = rhs;
+
+    for (size_t k=0; k<rigidBodies.size(); k++){
+        if (rigidBodies[k]->mass == INFINITY){
+            // scripted
+            //std::cout<<"A_topright: \n"<<A_topright.block(0,k*3,N,3)<<std::endl;
+            //std::cout<<"rhs_rb: \n"<<rhs_rb<<std::endl;
+            rhs_rb = rhs_rb - A_topright.block(0,k*3,N,3)*(rigidBodies[k]->retrieveRigidBodyV());
+        } else {
+            // unscripted
+        }
+    }
+
+    //std::cout<<"A: \n"<<A_rb<<std::endl;
+    //std::cout<<"rhs: \n"<<rhs_rb<<std::endl;
 
     /*
     // Modifications to A and rhs to deal with two-way coupling of rigid bodies
@@ -952,10 +990,9 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     assert(dpdn == dpdn);
 
     for (size_t i=0; i<rigidBodies.size(); i++){
-        V_rigidBodies[i] = soln.segment(N+3*i,3);
+        //V_rigidBodies[i] = soln.segment(N+3*i,3);
         //std::cout<<"wuhh: "<<V_rigidBodies[i]<<std::endl;
     }
-    
 }
 
 void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn){
@@ -1051,7 +1088,7 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 
 void Sim::step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies){
     for (size_t i=0; i<rigidBodies.size(); i++){
-        rigidBodies[i]->setRigidBodyV(V_rigidBodies[i]);
+        //rigidBodies[i]->setRigidBodyV(V_rigidBodies[i]);
     }
 }
 

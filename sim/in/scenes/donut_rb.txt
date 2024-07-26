@@ -2,7 +2,7 @@ scene generic_donut
 // scene-file ./in/liquids/donut_with_rect.txt
 
 time-step 0.005
-simulation-time .01
+simulation-time 2
 gravity 0
 
 sigma-la 1

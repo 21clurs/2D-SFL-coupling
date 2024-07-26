@@ -6,19 +6,19 @@ time-step 0.01
 simulation-time 4
 gravity 0
 
-sigma-la 1
+sigma-la 0
 sigma-sl 1
 sigma-sa 1
 rho 1
     
-mesh-size-n 64
+mesh-size-n 32
 mesh-remesh-iters 6
-mesh-edge-max-ratio 1.1
-mesh-edge-min-ratio 0.9
+mesh-edge-max-ratio 1.3
+mesh-edge-min-ratio 0.7
 
 mesh-collision-epsilon 0.01
 
-mesh-initial-velocity zero
+mesh-initial-velocity rotational_cw
 
 show-marker-particles 1
 markers-left -1.0
