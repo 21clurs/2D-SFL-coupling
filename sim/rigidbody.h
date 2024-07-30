@@ -8,6 +8,7 @@
 
 class RigidBody : public SolidMesh
 {
+    friend class Sim;
     public:
         double area;
         double mass;                    // rho * area

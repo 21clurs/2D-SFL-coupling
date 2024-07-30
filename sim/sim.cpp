@@ -566,11 +566,10 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             BC_p[i] = 0;
             // for rigid body contact, we treat it a little differently than a scripted/fixed solid contact
             // TODO: consolidate this so that it is nicer...
+            //std::cout<<"solid vertice, - u_solid dot n "<<std::endl;
             if (m.is_solid_rb[i]){
-                //BC_dpdn[i] = n_i.dot(m.vels[i]) * rho;
-                BC_dpdn[i] = n_i.dot(m.vels[i] - m.vels_solid[i]) * rho; // INCORRECT TREATMENT, but placeholder for testing
+                BC_dpdn[i] = n_i.dot(m.vels[i]) * rho;                
             } else {
-                //BC_dpdn[i] = n_i.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho;
                 BC_dpdn[i] = n_i.dot(m.vels[i] - m.vels_solid[i]) * rho;
             }
         }
@@ -790,7 +789,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         collocA(i,i) = omega_i - collocA.row(i).sum(); 
     }
 
-    /*    
+    /*
     std::cout<<"collocA (dGdn): "<<collocA<<std::endl;
     std::cout<<"collocB_air (G): "<<collocB_air<<std::endl;
     std::cout<<"collocB_solid (G): "<<collocB_solid<<std::endl;
@@ -835,7 +834,6 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     */
 
     // constructing the different block parts of the modified A, rhs to deal with two-way coupling
-    
     Eigen::MatrixXd A_topright = Eigen::MatrixXd::Zero(N, 3*rigidBodies.size());
     Eigen::MatrixXd A_bottomleft = Eigen::MatrixXd::Zero(3*rigidBodies.size(), N);
     Eigen::MatrixXd A_bottomright = Eigen::MatrixXd::Zero(3*rigidBodies.size(), 3*rigidBodies.size());
@@ -844,21 +842,28 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     size_t rb_scripted_count = 0;
     size_t rb_unscripted_count = 0;
     for (size_t k=0; k<rigidBodies.size(); k++){
-        //std::cout<<"MASS: "<<rigidBodies[k]->mass<<std::endl;
+        // count up scripted/unscripted bodies, this is to deal with space reservation later
+        // TODO: might do this differently later; a placeholder
         if (rigidBodies[k]->mass == INFINITY){
-            //std::cout<<"Infinite-mass rigid body :)"<<std::endl;
             rb_scripted_count++;
         } else{
             rb_unscripted_count++;
         }
+
         for (size_t i=0; i<N; i++){
-            Eigen::Vector2d n_i = -m.calc_vertex_normal(i); // not maybe the most foolproof way? but a way...
-            Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies[0]->com, n_i));
+            // populate A_topright block
+            Eigen::Vector3d row = Eigen::Vector3d::Zero();
+            for (size_t j=0; j<N; j++){
+                Eigen::Vector2d n_j = m.calc_vertex_normal(j);
+                Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies[k]->com, n_j));
 
-            double G_sum = collocB_solid.row(i).sum();
+                row += collocB_solid(i,j)*J_j;
+            }
+            A_topright.block(i,k*3,1,3) = rho * row.transpose();
 
-            A_topright.block(i,k*3,1,3) = G_sum * rho * J.transpose();
-
+            // populate A_bottomleft block
+            Eigen::Vector2d n_i = m.calc_vertex_normal(i);
+            Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies[k]->com, n_i));
             if (m.is_solid_rb[i]){
                 A_bottomleft.block(k*3,i,3,1) = J;
             }
@@ -886,76 +891,19 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         if (rigidBodies[k]->mass == INFINITY){
             // scripted
             //std::cout<<"A_topright: \n"<<A_topright.block(0,k*3,N,3)<<std::endl;
-            //std::cout<<"rhs_rb: \n"<<rhs_rb<<std::endl;
+            //std::cout<<"woah "<< A_topright.block(0,k*3,N,3)*(rigidBodies[k]->retrieveRigidBodyV())<<std::endl;
             rhs_rb = rhs_rb - A_topright.block(0,k*3,N,3)*(rigidBodies[k]->retrieveRigidBodyV());
         } else {
             // unscripted
         }
     }
 
-    //std::cout<<"A: \n"<<A_rb<<std::endl;
-    //std::cout<<"rhs: \n"<<rhs_rb<<std::endl;
-
-    /*
-    // Modifications to A and rhs to deal with two-way coupling of rigid bodies
-    size_t N_rb = N + 3*rigidBodies.size();
-    Eigen::MatrixXd A_rb = Eigen::MatrixXd::Zero(N_rb, N_rb);
-    Eigen::VectorXd rhs_rb = Eigen::VectorXd::Zero(N_rb);
-
-    // TODO: at some point deal with triple point (and scripted solids), but not right this second
-    // copy A matrix into upper left NxN block
-    A_rb.block(0,0,N,N) = A;
-    // copy rhs into the top of rhs_rb
-    rhs_rb.head(N) = rhs;
-
-    // put the 3x3 mass matrices M into the lower right block
-    for (size_t i=0; i<rigidBodies.size(); i++){
-        Eigen::Matrix3d M = Eigen::Matrix3d::Zero();
-        M.diagonal() = Eigen::Vector3d(rigidBodies[i]->area, rigidBodies[i]->area, rigidBodies[i]->moi);
-        M = M*0.0001;
-
-        //std::cout<<"what's even happening!\n"<<M<<std::endl;
-    
-        A_rb.block(N+3*i, N+3*i, 3, 3) = (-1.0/dt)*M;
-        //A_rb.block(N+3*i, N+3*i, 3, 3) = (-1)*M;
-        //std::cout<<"o.g.\n"<<A<<std::endl;
-        //std::cout<<"silly goofy!\n"<<A_rb<<std::endl;
-        //std::cout<<"rigid body v!\n"<<rigidBodies[i]->retrieveRigidBodyV()<<std::endl;
-        rhs_rb.segment(N+3*i, 3) = (-1.0/dt)*M*(rigidBodies[i]->retrieveRigidBodyV());
-        //std::cout<<"o.g.\n"<<rhs<<std::endl;
-        //std::cout<<"sillier goofier!\n"<<rhs_rb<<std::endl;
-    }
-    // place J and J^T appropriately
-    // right now only dealing with case of one rigid body
-    if (rigidBodies.size()==1){
-        for (size_t i=0; i<N; i++){
-            
-            Eigen::Vector2d n_i = -m.calc_vertex_normal(i); // not maybe the most foolproof way? but a way...
-            Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies[0]->com, n_i));
-
-            //std::cout<<"sillier goofier!\n"<<G_ii<<std::endl;
-            if (m.is_solid_rb[i]){
-                double G_ii = collocB_solid(i,i);
-                A_rb.block(i,N,1,3) = G_ii*(rho)*J.transpose();
-                //A_rb.block(i,N,1,3) = G_ii*(rho/dt)*J.transpose();
-                A_rb.block(N,i,3,1) = J;
-                //A_rb.block(N,i,3,1) = dt*J;
-            } else {
-                double G_ii = collocB_air(i,i);
-                A_rb.block(i,N,1,3) = G_ii*(rho)*J.transpose();
-                //A_rb.block(i,N,1,3) = G_ii*(rho/dt)*J.transpose();
-            }
-        }
-    }
-    //std::cout<<"here too\n"<<A_rb<<std::endl;
-    */
-   
     // linear solve
     // DIRECT - LU
     //Eigen::VectorXd soln = A_rb.lu().solve(rhs_rb);
     // ITERATIVE - BICGSTAB
-    Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A);
-    Eigen::VectorXd soln = solver.solve(rhs);
+    Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A_rb);
+    Eigen::VectorXd soln = solver.solve(rhs_rb);
 
     //std::cout<<"x: "<<soln<<std::endl;
         
