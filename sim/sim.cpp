@@ -537,7 +537,7 @@ void Sim::step_BEM(){
     std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies.size(), Eigen::Vector3d::Zero());
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn, V_rigidBodies);
     step_BEM_gradP(BC_p, BC_dpdn, p,dpdn);
-    //step_BEM_rigidBodyV(V_rigidBodies);
+    step_BEM_rigidBodyV(V_rigidBodies);
 }
 
 void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
@@ -890,11 +890,16 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     for (size_t k=0; k<rigidBodies.size(); k++){
         if (rigidBodies[k]->mass == INFINITY){
             // scripted
-            //std::cout<<"A_topright: \n"<<A_topright.block(0,k*3,N,3)<<std::endl;
-            //std::cout<<"woah "<< A_topright.block(0,k*3,N,3)*(rigidBodies[k]->retrieveRigidBodyV())<<std::endl;
+            // std::cout<<"A_topright: \n"<<A_topright.block(0,k*3,N,3)<<std::endl;
+            // std::cout<<"woah "<< A_topright.block(0,k*3,N,3)*(rigidBodies[k]->retrieveRigidBodyV())<<std::endl;
             rhs_rb = rhs_rb - A_topright.block(0,k*3,N,3)*(rigidBodies[k]->retrieveRigidBodyV());
+            // stuff in the bottomleft and bottomright for this are not necessary.
         } else {
             // unscripted
+            A_rb.block(0,N+k*3,N,3) = A_topright.block(0,k*3,N,3);
+            A_rb.block(N+k*3,0,3,N) = A_bottomleft.block(k*3,0,3,N);
+            A_rb.block(N+k*3,N+k*3,3,3) = A_bottomright.block(k*3,k*3,3,3);
+            rhs_rb.segment(N+k*3,3) = rigidBodies[k]->retrieveRigidBodyV();
         }
     }
 
@@ -905,8 +910,12 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A_rb);
     Eigen::VectorXd soln = solver.solve(rhs_rb);
 
-    //std::cout<<"x: "<<soln<<std::endl;
-        
+    /*
+    std::cout<<"A_rb: "<<A_rb<<std::endl;
+    std::cout<<"rhs_rb: "<<rhs_rb<<std::endl;
+    std::cout<<"x: "<<soln<<std::endl;
+     */
+
     /*
     std::cout<<"A: "<<A<<std::endl;
     std::cout<<"rhs: "<<rhs<<std::endl;
@@ -938,7 +947,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     assert(dpdn == dpdn);
 
     for (size_t i=0; i<rigidBodies.size(); i++){
-        //V_rigidBodies[i] = soln.segment(N+3*i,3);
+        V_rigidBodies[i] = soln.segment(N+3*i,3);
         //std::cout<<"wuhh: "<<V_rigidBodies[i]<<std::endl;
     }
 }
@@ -1036,7 +1045,7 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 
 void Sim::step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies){
     for (size_t i=0; i<rigidBodies.size(); i++){
-        //rigidBodies[i]->setRigidBodyV(V_rigidBodies[i]);
+        rigidBodies[i]->setRigidBodyV(V_rigidBodies[i]);
     }
 }
 

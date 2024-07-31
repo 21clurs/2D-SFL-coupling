@@ -24,6 +24,7 @@ class RigidBody : public SolidMesh
         void setRotation(double theta){ rotationTheta = theta; };
         void setTranslation(Eigen::Vector2d t){ translation = t; };
 
+        void setRigidBodyV(Eigen::Vector3d V_in) { V_t = Eigen::Vector2d(V_in.x(), V_in.y()); V_omega = V_in.z(); };
         void setRigidBodyV(Eigen::Vector2d V_t_in, double V_omega_in) { V_t = V_t_in; V_omega = V_omega_in; };
         void setRigidBodyV(double V_t_x, double V_t_y, double V_omega_in) { V_t = Eigen::Vector2d(V_t_x, V_t_y); V_omega = V_omega_in; };
 
