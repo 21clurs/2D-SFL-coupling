@@ -218,33 +218,10 @@ void Scenes::sceneFromFile(Sim * const &sim, const std::string & filename, const
 }
 
 void Scenes::setupSceneSolids(Sim * const &sim){
-    // TODO: make this better
-    if (SimOptions::intValue("num-solids") == 1){
-        SolidMesh *m = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m, SimOptions::strValue("solid-file-1"));
-        sim->addSolid(m);
-    } else if (SimOptions::intValue("num-solids") == 2){
-        SolidMesh *m1 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m1, SimOptions::strValue("solid-file-1"));
-        sim->addSolid(m1);
-        SolidMesh *m2 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m2, SimOptions::strValue("solid-file-2"));
-        sim->addSolid(m2);
-    } else if (SimOptions::intValue("num-solids") == 3){
-        SolidMesh *m1 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m1, SimOptions::strValue("solid-file-1"));
-        sim->addSolid(m1);
-        SolidMesh *m2 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m2, SimOptions::strValue("solid-file-2"));
-        sim->addSolid(m2);
-        SolidMesh *m3 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m3, SimOptions::strValue("solid-file-3"));
-        sim->addSolid(m3);
-    }
-    // TODO: make this better
-    if (SimOptions::intValue("num-rb") == 1){
+    for (int i=1; i<=SimOptions::intValue("num-rb"); i++){
         RigidBody *r = new RigidBody();
-        RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-1"));
+        RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-"+std::to_string(i)));
+        r->rb_index_in_sim = i;
         sim->addRigidBody(r);
     }
 }
@@ -360,7 +337,6 @@ void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename
     m.vels = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
     m.vels_solid = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
     m.is_corner = std::vector<bool>(N, false);
-    m.is_solid_rb = std::vector<bool>(m.verts.size(), false);
     m.reset_face_length_limits(); // this is fairly important to set!
 
     // double checking
@@ -374,7 +350,6 @@ void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename
     assert(N == m.is_solid.size());
     assert(N == m.is_triple.size());
     assert(N == m.is_corner.size());
-    assert(N == m.is_solid_rb.size());
 }
 
 void Scenes::setupSceneVelocities(std::vector<Eigen::Vector2d> & verts, std::vector<Eigen::Vector2d> & vels, const std::string & initialvelocity){

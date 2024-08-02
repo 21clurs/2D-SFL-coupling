@@ -9,6 +9,7 @@
 class RigidBody : public SolidMesh
 {
     friend class Sim;
+    friend class Scenes;
     public:
         double area;
         double mass;                    // rho * area
@@ -42,6 +43,8 @@ class RigidBody : public SolidMesh
         static bool loadMeshFromFile(RigidBody &m, std::string infileName);
 
     protected:
+        u_int rb_index_in_sim;
+
         double rho;
         // the coordinates of the RigidBody without any of the rotation/translation
         // the vertices of the RigidBody with its transformations applied are stored in verts (field inherited from Mesh)

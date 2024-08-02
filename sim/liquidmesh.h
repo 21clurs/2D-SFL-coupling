@@ -46,7 +46,8 @@ class LiquidMesh : public Mesh
         std::vector<bool> is_triple;
 
         std::vector<bool> is_corner;
-        std::vector<bool> is_solid_rb;
+
+        std::vector<uint> per_vertex_rb_contact;
 
         void update_triple_points();
 

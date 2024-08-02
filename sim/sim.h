@@ -18,7 +18,6 @@ class Sim
         Sim(LiquidMesh& m, int n, float dt); 
         ~Sim(); // need to manually delete stuff in the solids vector...
 
-        void addSolid(SolidMesh* solid);
         void addRigidBody(RigidBody* rigidBody);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
@@ -54,9 +53,12 @@ class Sim
         Eigen::Vector2d gravity;
 
         // solid objects in the sim
-        std::vector<SolidMesh*> solids;
+        //std::vector<SolidMesh*> solids;
         // rigid bodies in the sim
-        std::vector<RigidBody*> rigidBodies;
+        //std::vector<RigidBody*> rigidBodies;
+
+        std::vector<RigidBody*> rigidBodies_scripted;
+        std::vector<RigidBody*> rigidBodies_unscripted;
 
         void remesh();
 

@@ -27,5 +27,5 @@ markers-bottom -0.5
 markers-top 0.5
 markers-spacing 0.1
 
-num-solids 1
-solid-file-1 ./in/solids/cup.txt
+num-rb 1
+rigid-body-file-1 ./in/solids/cup.txt

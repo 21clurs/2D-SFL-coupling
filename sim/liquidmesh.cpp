@@ -11,7 +11,8 @@ LiquidMesh::LiquidMesh() : Mesh(){
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
-    is_solid_rb = std::vector<bool>(verts.size(), false);
+
+    per_vertex_rb_contact = std::vector<uint>(verts.size(), 0);
 }
 
 LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) :
@@ -25,7 +26,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
-    is_solid_rb = std::vector<bool>(verts.size(), false);
+
+    per_vertex_rb_contact = std::vector<uint>(verts.size(), 0);
 
     reset_face_length_limits();
 }
@@ -41,7 +43,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
-    is_solid_rb = std::vector<bool>(verts.size(), false);
+
+    per_vertex_rb_contact = std::vector<uint>(verts.size(), 0);
 
     reset_face_length_limits();
 }
@@ -61,7 +64,8 @@ void LiquidMesh::resize_mesh(size_t n){
     is_triple.resize(n);
 
     is_corner.resize(n);
-    is_solid_rb.resize(n);
+
+    per_vertex_rb_contact.resize(n);
 }
 
 void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple){
@@ -227,8 +231,6 @@ void LiquidMesh::edge_collapse(){
 
         std::vector<bool> is_corner_remeshed;
         is_corner_remeshed.reserve(n_old-n_collapse);
-        std::vector<bool> is_solid_rb_remeshed;
-        is_solid_rb_remeshed.reserve(n_old-n_collapse);
 
         std::unordered_map<size_t, int> verts_map; // maps old to new verts
 
@@ -244,7 +246,6 @@ void LiquidMesh::edge_collapse(){
                 is_triple_remeshed.push_back(is_triple[i]);
 
                 is_corner_remeshed.push_back(is_corner[i]);
-                is_solid_rb_remeshed.push_back(is_solid_rb[i]);
             } else{
                 verts_map[i] = -1;
             }
@@ -274,7 +275,8 @@ void LiquidMesh::edge_collapse(){
         is_triple = is_triple_remeshed;
 
         is_corner = is_corner_remeshed;
-        is_solid_rb = is_solid_rb_remeshed;
+
+        per_vertex_rb_contact.resize(verts.size());
     }
     assert(faces.size() == n_old - n_collapse);
     assert(verts.size() == n_old - n_collapse);
@@ -286,7 +288,8 @@ void LiquidMesh::edge_collapse(){
     assert(is_triple.size() == verts.size());
 
     assert(is_corner.size() == verts.size());
-    assert(is_solid_rb.size() == verts.size());
+
+    assert(per_vertex_rb_contact.size() == verts.size());
 
     update_neighbor_face_vecs();
     
@@ -317,19 +320,12 @@ void LiquidMesh::edge_split(){
                 is_triple.push_back(false);
 
                 is_corner.push_back(false);
-                // TODO: check on this
-                if(is_solid_rb[verts_from_face(i).x()] || is_solid_rb[verts_from_face(i).y()]){
-                    is_solid_rb.push_back(true);
-                } else{
-                    is_solid_rb.push_back(false);
-                }
             } else{
                 is_air.push_back(true);
                 is_solid.push_back(false);
                 is_triple.push_back(false);
 
                 is_corner.push_back(false);
-                is_solid_rb.push_back(false);
             }
         }
     }
@@ -343,7 +339,9 @@ void LiquidMesh::edge_split(){
     assert(is_triple.size() == verts.size());
 
     assert(is_corner.size() == verts.size());
-    assert(is_solid_rb.size() == verts.size());
+
+    per_vertex_rb_contact.resize(verts.size());
+    assert(per_vertex_rb_contact.size() == verts.size());
     
     update_neighbor_face_vecs();
 }
@@ -375,7 +373,6 @@ void LiquidMesh::reset_boundary_types(){
     is_triple = std::vector<bool>(is_triple.size(), false);
 
     is_corner = std::vector<bool>(is_corner.size(), false);
-    is_solid_rb = std::vector<bool>(is_solid_rb.size(), false);
 }
 void LiquidMesh::reset_face_length_limits(){
     minFaceLength = SimOptions::doubleValue("mesh-edge-min-ratio")*calc_avg_face_length();
