@@ -3,7 +3,7 @@
 #include <fstream>
 #include "sim.h"
 
-RigidBody::RigidBody() : SolidMesh(){
+RigidBody::RigidBody() : Mesh(){
     rho = INFINITY;
     verts_no_transform = std::vector<Eigen::Vector2d>(0, Eigen::Vector2d(0.0, 0.0));
     rotationTheta = 0;
@@ -13,9 +13,10 @@ RigidBody::RigidBody() : SolidMesh(){
     updateRigidBodyVars();
     updateVerts();
     mass = rho*area;
+    vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
 }
 
-RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : SolidMesh(in_verts, in_faces){
+RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) : Mesh(in_verts, in_faces){
     rho = INFINITY;
     verts_no_transform = in_verts;
     rotationTheta = 0;
@@ -25,9 +26,10 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
     updateRigidBodyVars();
     updateVerts();
     mass = rho*area;
+    vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
 }
 
-RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : SolidMesh(in_verts, in_faces, in_vels){
+RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces, const std::vector<Eigen::Vector2d>& in_vels) : Mesh(in_verts, in_faces, in_vels){
     rho = INFINITY;
     verts_no_transform = in_verts;
     rotationTheta = 0;
@@ -37,11 +39,20 @@ RigidBody::RigidBody(const std::vector<Eigen::Vector2d>& in_verts, const std::ve
     updateRigidBodyVars();
     updateVerts();
     mass = rho*area;
+    vel_func = [](double t)->Eigen::Vector2d{ return Eigen::Vector2d(0, 0); };
 }
+
+void RigidBody::setVelFunc(std::function<Eigen::Vector2d(double)> func){ vel_func = func; }
 
 void RigidBody::advectFE(double dt){
     setTranslation(translation + V_t*dt);
     setRotation(rotationTheta +  V_omega*dt);
+    updateVerts();
+    calculateCOM();
+}
+
+void RigidBody::advectFE(double curr_t, double dt){
+    setTranslation(translation + vel_func(curr_t)*dt);
     updateVerts();
     calculateCOM();
 }

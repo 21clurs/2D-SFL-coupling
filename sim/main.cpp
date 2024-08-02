@@ -5,7 +5,6 @@
 
 #include "liquidmesh.h"
 #include "sim.h"
-#include "solidmesh.h"
 #include "testinghelpers.h"
 #include "rigidbody.h"
 

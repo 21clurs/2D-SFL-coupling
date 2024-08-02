@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 #include "liquidmesh.h"
-#include "solidmesh.h"
 #include "rigidbody.h"
 
 class Sim
