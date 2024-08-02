@@ -146,8 +146,10 @@ Sim::~Sim(){
 void Sim::addRigidBody(RigidBody* rigidBody){
     if (rigidBody->mass == INFINITY){
         rigidBodies_scripted.emplace_back(rigidBody);
+        rigidBody->rb_index_in_sim = rigidBodies_scripted.size()-1;
     } else{
         rigidBodies_unscripted.emplace_back(rigidBody);
+        rigidBody->rb_index_in_sim = rigidBodies_unscripted.size()-1;
     }
 }
 
@@ -832,10 +834,12 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             // populate matrix to contain relevant \sum(G*J^T) information
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
-                Eigen::Vector2d n_j = m.calc_vertex_normal(j);
-                Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_scripted[k]->com, n_j));
+                if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == k)){
+                    Eigen::Vector2d n_j = m.calc_vertex_normal(j);
+                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_scripted[k]->com, n_j));
 
-                row += collocB_solid(i,j)*J_j;
+                    row += collocB_solid(i,j)*J_j;
+                }
             }
             rhs_scripted_contribution.block(i,k*3,1,3) = rho * row.transpose();
         }

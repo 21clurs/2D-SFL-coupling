@@ -221,7 +221,6 @@ void Scenes::setupSceneSolids(Sim * const &sim){
     for (int i=1; i<=SimOptions::intValue("num-rb"); i++){
         RigidBody *r = new RigidBody();
         RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-"+std::to_string(i)));
-        r->rb_index_in_sim = i;
         sim->addRigidBody(r);
     }
 }

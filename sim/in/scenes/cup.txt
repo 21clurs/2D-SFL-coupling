@@ -1,5 +1,5 @@
 scene rectangle
-width 2.5
+width 3
 height 1
 
 time-step 0.005
@@ -27,5 +27,6 @@ markers-bottom -0.5
 markers-top 0.5
 markers-spacing 0.1
 
-num-rb 1
+num-rb 2
 rigid-body-file-1 ./in/solids/cup.txt
+rigid-body-file-2 ./in/solids/square_rb.txt
