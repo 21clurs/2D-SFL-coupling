@@ -125,15 +125,19 @@ namespace {
         }
     }
     void gen_square_donut(int n, const Eigen::Vector2d& center, double sideLength_inner, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
-        v.resize(n);
-        f.resize(n);
         
         double ratio = sideLength_outer/sideLength_inner;
 
         int n_inner = n/(ratio+1);
         int n_outer = n-n_inner;
 
+        n_inner = n_inner + (n_inner%4);
+        n_outer = n_outer + (n_outer%4);
+        v.resize(n_inner + n_outer);
+        f.resize(n_inner + n_outer);
+
         assert(((void)"n_inner is a multiple of 4 when generating a square donut", n_inner%4==0));
+        assert(((void)"n_outer is a multiple of 4 when generating a square donut", n_outer%4==0));
         
         int nPerSide_inner = n_inner/4;
         float delta_inner = sideLength_inner/nPerSide_inner;
@@ -174,8 +178,8 @@ namespace {
         v.resize(n);
         f.resize(n);
         
-        // assumes just one rigid body that this donut spawns around
-        assert(SimOptions::intValue("num-rb") == 1);
+        // assumes at least one rigid body that this donut spawns around
+        assert(SimOptions::intValue("num-rb") >= 1);
         RigidBody *m = new RigidBody();
         RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
 
@@ -195,6 +199,44 @@ namespace {
             f[i+n_inner][0] = n_inner + i;
             f[i+n_inner][1] = n_inner + (i+1)%n_outer;
         }
+    }
+    void gen_generic_square_donut(int n, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+        // assumes at least one rigid body that this donut spawns around
+        assert(SimOptions::intValue("num-rb") >= 1);
+        RigidBody *m = new RigidBody();
+        RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
+
+        int n_inner = m->verts.size();
+        int n_outer = n - n_inner;
+        n_outer = n_outer + n_outer%4;
+
+        n = n_inner + n_outer;
+
+        // creates a rough square donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+
+        for (size_t i=0; i<n_inner; i++){
+            v[i] = m->verts[i];
+            f[i] = Eigen::Vector2i(m->faces[i].y(),m->faces[i].x());
+        }
+
+        // then the square
+        int nPerSide = n_outer/4;
+        double delta = sideLength_outer/nPerSide;
+        // populate outer square
+        for(size_t i=0; i<nPerSide; i++){
+            // bottom
+            v[n_inner + i] = Eigen::Vector2d((-sideLength_outer/2) + i*delta, -sideLength_outer/2);
+            // right
+            v[n_inner + nPerSide+i] = Eigen::Vector2d(sideLength_outer/2, (-sideLength_outer/2) + i*delta);
+            // top
+            v[n_inner + 2*nPerSide+i] = Eigen::Vector2d((sideLength_outer/2)-i*delta, sideLength_outer/2);
+            // left
+            v[n_inner + 3*nPerSide+i] = Eigen::Vector2d(-sideLength_outer/2, (sideLength_outer/2)-i*delta);
+        }
+        for(size_t i=0; i<n_outer; i++)
+            f[n_inner + i] = Eigen::Vector2i(n_inner + i, n_inner + (i+1)%n_outer);
     }
 }
 
@@ -230,14 +272,6 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
     std::vector<Eigen::Vector2d> v(N, Eigen::Vector2d(0,0));
     std::vector<Eigen::Vector2i> f(N, Eigen::Vector2i(0,0));
-    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
-
-    std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
-
-    std::vector<bool> air(N, true);
-    std::vector<bool> solid(N, false);
-    std::vector<bool> triple(N, false);
-    std::vector<bool> corner(N, false);
 
     if (scenename == "circle"){
 
@@ -296,8 +330,6 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         double d_outer = SimOptions::doubleValue("size-outer");
         double d_inner = SimOptions::doubleValue("size-inner");
 
-        std::cout<<d_outer<<","<<d_inner<<std::endl;
-
         gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
 
     } else if (scenename == "generic_donut"){
@@ -305,12 +337,30 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
         gen_generic_donut(N, Eigen::Vector2d(0.0,0.0), r_outer, v, f);
 
-    }else {
+    } else if (scenename == "generic_square_donut"){
+        double d_outer = SimOptions::doubleValue("size-outer");
+
+        gen_generic_square_donut(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
+
+    } else {
         std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
         return;
     }
 
-    //sim->m.resize_mesh(v.size());
+    if (N != v.size()){
+        std::cout<<"Mesh was resized to have "<<v.size()<<" verts in order to better setup scene."<<std::endl;
+        N = v.size();
+        m.resize_mesh(N);
+    }
+
+    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
+
+    std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
+
+    std::vector<bool> air(N, true);
+    std::vector<bool> solid(N, false);
+    std::vector<bool> triple(N, false);
+    std::vector<bool> corner(N, false);
 
     for (size_t i = 0; i < v.size(); i++) 
         m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());

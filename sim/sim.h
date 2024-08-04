@@ -46,6 +46,8 @@ class Sim
         float dt;
         LiquidMesh m;
 
+        int outframe_frequency;
+
         // simulation parameters
         double sigma, sigma_SL, sigma_SA;
         double rho;

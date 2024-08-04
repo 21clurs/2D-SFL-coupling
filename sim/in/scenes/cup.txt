@@ -7,7 +7,7 @@ simulation-time 4
 gravity -1
 
 sigma-la 1
-sigma-sl 1
+sigma-sl 1.1
 sigma-sa 1
 rho 1
     

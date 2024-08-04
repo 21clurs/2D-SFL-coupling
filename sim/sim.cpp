@@ -19,6 +19,7 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
 
     SimOptions::addDoubleOption ("time-step", 0.01);
     SimOptions::addDoubleOption ("simulation-time", 10.0);
+    SimOptions::addIntegerOption ("output-frame-frequency", 1);
     SimOptions::addDoubleOption ("gravity", 0);
 
     SimOptions::addDoubleOption ("sigma-sl", 1);
@@ -95,16 +96,21 @@ void Sim::run(){
 
     // main sim loop
     double dt = SimOptions::doubleValue("time-step");
-    int frames = (int) (SimOptions::doubleValue("simulation-time")/dt);
-    for (int i=0; i<frames; i++){
+    int steps = (int) (SimOptions::doubleValue("simulation-time")/dt);
+    int frame_num = 0;
+    for (int i=0; i<steps; i++){
         // sim stuff
-        outputFrame(std::to_string(i)+".txt");
+        if (i%outframe_frequency == 0){
+            outputFrame(std::to_string(frame_num)+".txt");
+            frame_num++;
+        }
         step_sim(i*dt);
         
         // progress messages
-        std::cout<<"Simulation steps "<<i+1<<"/"<<frames<<" complete."<<"\r";
+        std::cout<<"Simulation steps "<<i+1<<"/"<<steps<<" complete."<<"\r";
         std::cout.flush();
     }
+    std::cout<<frame_num<<" frames successfully generated!"<<std::endl;
     std::cout << std::endl; 
 }
 
@@ -117,6 +123,7 @@ Sim::Sim(){
     sigma_SA = SimOptions::doubleValue("sigma-sa");
     rho = SimOptions::doubleValue("rho");
     gravity = Eigen::Vector2d({0.0, SimOptions::doubleValue("gravity")});
+    outframe_frequency = SimOptions::intValue("output-frame-frequency");
     
     markerparticles = {};
 }
