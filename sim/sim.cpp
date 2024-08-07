@@ -110,8 +110,8 @@ void Sim::run(){
         std::cout<<"Simulation steps "<<i+1<<"/"<<steps<<" complete."<<"\r";
         std::cout.flush();
     }
-    std::cout<<frame_num<<" frames successfully generated!"<<std::endl;
-    std::cout << std::endl; 
+    std::cout << std::endl;
+    std::cout<<frame_num<<" frames successfully generated!"<<std::endl; 
 }
 
 Sim::Sim(){
@@ -151,17 +151,22 @@ Sim::~Sim(){
 }
 
 void Sim::addRigidBody(RigidBody* rigidBody){
+    rigidBody->rb_sim_id = rigidBodies_scripted.size()+rigidBodies_unscripted.size();
     if (rigidBody->mass == INFINITY){
         rigidBodies_scripted.emplace_back(rigidBody);
-        rigidBody->rb_index_in_sim = rigidBodies_scripted.size()-1;
     } else{
         rigidBodies_unscripted.emplace_back(rigidBody);
-        rigidBody->rb_index_in_sim = rigidBodies_unscripted.size()-1;
     }
+    rigidBody->rb_sim_id = rigidBodies_scripted.size()+rigidBodies_unscripted.size();
 }
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
     std::ofstream file(filelocation+filename);
+
+    file<<"dt "<<dt<<std::endl;
+    file<<"out-freq "<<outframe_frequency<<std::endl;
+    file<<std::endl;
+
     for (size_t i=0; i<m.verts.size(); i++){
         char vtype;
         if (m.is_corner[i])
@@ -528,6 +533,10 @@ void Sim::step_gravity(){
     for (size_t i=0; i<n; i++){
         m.vels[i] += gravity*dt;
     }
+    for (size_t k=0; k<rigidBodies_unscripted.size(); k++){
+        rigidBodies_unscripted[k]->setRigidBodyV(rigidBodies_unscripted[k]->retrieveRigidBodyV() + Eigen::Vector3d(gravity.x()*dt, gravity.y()*dt, 0));
+        rigidBodies_unscripted[k]->updatePerVertexVels();
+    }
 }
 
 void Sim::step_BEM(){
@@ -836,12 +845,13 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     Eigen::MatrixXd A_bottomright = Eigen::MatrixXd::Zero(3*rigidBodies_unscripted.size(), 3*rigidBodies_unscripted.size());
     Eigen::VectorXd rhs_tail = Eigen::VectorXd::Zero(3*rigidBodies_unscripted.size());
 
+    // scripted (infinite-mass) solids
     for (size_t k=0; k<rigidBodies_scripted.size(); k++){
         for (size_t i=0; i<N; i++){
             // populate matrix to contain relevant \sum(G*J^T) information
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
-                if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == k)){
+                if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
                     Eigen::Vector2d n_j = m.calc_vertex_normal(j);
                     Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_scripted[k]->com, n_j));
 
@@ -852,30 +862,33 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         }
     }
 
+    // unscripted solids
     for (size_t k=0; k<rigidBodies_unscripted.size(); k++){
         for (size_t i=0; i<N; i++){
             // populate A_topright block
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
-                Eigen::Vector2d n_j = m.calc_vertex_normal(j);
-                Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_unscripted[k]->com, n_j));
+                if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
+                    Eigen::Vector2d n_j = m.calc_vertex_normal(j);
+                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_unscripted[k]->com, n_j));
 
-                row += collocB_solid(i,j)*J_j;
+                    row += collocB_solid(i,j)*J_j;
+                }
             }
             A_topright.block(i,k*3,1,3) = rho * row.transpose();
 
             // populate A_bottomleft block
             Eigen::Vector2d n_i = m.calc_vertex_normal(i);
             Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies_unscripted[k]->com, n_i));
-            if (m.is_solid[i]){
-                A_bottomleft.block(k*3,i,3,1) = J;
+            if (m.is_solid[i] && (m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id)){
+                A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i);         // remember, this is an integral so maybe multiply by area is important ?
             }
         }
         Eigen::Matrix3d M = Eigen::Matrix3d::Zero();
         M.diagonal() = Eigen::Vector3d(rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->moi);
-        A_bottomright.block(k*3,k*3,3,3) =  (-1.0/dt) * M;
+        A_bottomright.block(k*3,k*3,3,3) =  (-1.0) * M; // took out 1/dt term
 
-        rhs_tail.segment(3*k,3) = (-1.0/dt) * M * (rigidBodies_unscripted[k]->retrieveRigidBodyV());
+        rhs_tail.segment(3*k,3) = (-1.0) * M * (rigidBodies_unscripted[k]->retrieveRigidBodyV()); // took out 1/dt term
     }
     /*
     std::cout<<"A_topright: \n"<<A_topright<<std::endl;
@@ -891,21 +904,22 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     rhs_rb.head(N) = rhs;
 
     for (size_t k=0; k<rigidBodies_scripted.size(); k++){
-        rhs_rb = rhs_rb - rhs_scripted_contribution.block(0,k*3,N,3)*(rigidBodies_scripted[k]->retrieveRigidBodyV());
+        rhs_rb.head(N) = rhs_rb.head(N) - rhs_scripted_contribution.block(0,k*3,N,3)*(rigidBodies_scripted[k]->retrieveRigidBodyV());
     }
     for (size_t k=0; k<rigidBodies_unscripted.size(); k++){
         A_rb.block(0,N+k*3,N,3) = A_topright.block(0,k*3,N,3);
         A_rb.block(N+k*3,0,3,N) = A_bottomleft.block(k*3,0,3,N);
         A_rb.block(N+k*3,N+k*3,3,3) = A_bottomright.block(k*3,k*3,3,3);
-        rhs_rb.segment(N+k*3,3) = rigidBodies_unscripted[k]->retrieveRigidBodyV();
+        rhs_rb.segment(N+k*3,3) = rhs_tail.segment(k*3,3);
     }
 
     // linear solve
     // DIRECT - LU
-    //Eigen::VectorXd soln = A_rb.lu().solve(rhs_rb);
-    // ITERATIVE - BICGSTAB
-    Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A_rb);
-    Eigen::VectorXd soln = solver.solve(rhs_rb);
+    Eigen::VectorXd soln = A_rb.lu().solve(rhs_rb);
+    // ITERATIVE - BiCGSTAB
+    // BiCGSTAB hates me :<
+    //Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A_rb);
+    //Eigen::VectorXd soln = solver.solve(rhs_rb);
 
     /*
     std::cout<<"A_rb: "<<A_rb<<std::endl;
@@ -939,7 +953,11 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         else
             throw std::logic_error("This should not have been reached-- all vertices should be categorized as air, solid, or triple");
     }
-
+    /*
+    std::cout<<"P: "<<std::endl;
+    std::cout<<p<<std::endl;
+    std::cout<<std::endl;
+    */
     assert(p == p);
     assert(dpdn == dpdn);
 

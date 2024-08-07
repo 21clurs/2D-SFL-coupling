@@ -51,7 +51,7 @@ class RigidBody : public Mesh
         static bool loadMeshFromFile(RigidBody &m, std::string infileName);
 
     protected:
-        u_int rb_index_in_sim;
+        u_int rb_sim_id;
 
         double rho;
         // the coordinates of the RigidBody without any of the rotation/translation

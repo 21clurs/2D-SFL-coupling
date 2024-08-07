@@ -214,7 +214,7 @@ void RigidBody::collideAndSnap(LiquidMesh& l){
             // snap the point to the nearest face
             l.verts[j] = nearest_pt;
             // set effective velocity
-            l.per_vertex_rb_contact[j] = rb_index_in_sim;
+            l.per_vertex_rb_contact[j] = rb_sim_id;
             l.vels_solid[j] = V_t + V_omega*Eigen::Vector2d(-(l.verts[j]-com).y(),(l.verts[j]-com).x());
             l.set_boundaries_for_vertex(j, false, true, false, pt_snapped_to_solid_corner);
         }

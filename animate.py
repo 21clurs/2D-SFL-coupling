@@ -26,6 +26,8 @@ for frame in range(start, end):
     vColorList = [] # vertice colours
     mpList = [] # marker particles
     #mpvList = [] # marker particle velocities
+    dt = 0
+    outFreq = 1
 
     if os.path.isfile(outdir+str(frame)+".txt"):
         with open(outdir+str(frame)+".txt","r") as curr_frame_file:
@@ -58,6 +60,10 @@ for frame in range(start, end):
                     mpList.append([ float(r[1]), float(r[2])])
                 #elif r[0] == 'pv':
                     #mpvList.append([ float(r[1]), float(r[2])])
+                elif r[0] == 'dt':
+                    dt = float(r[1])
+                elif r[0] == 'out-freq':
+                    outFreq = float(r[1])
 
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
@@ -110,6 +116,8 @@ for frame in range(start, end):
             if "-shownumpoints" in sys.argv:
                 plt.text(1.4, -1.9, "n: {}".format(len(v)), fontsize = 11)
             
+        
+        plt.text(-1.9, -1.7, "t: {curr_t:.3f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         plt.text(-1.9, -1.9, "Frame: {}".format(frame), fontsize = 11)
 
         #plt.show()
