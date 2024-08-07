@@ -252,53 +252,19 @@ void Sim::step_sim(double curr_t){
     for (size_t i=0; i<m.verts.size(); i++){
         std::cout<<m.verts[i][0]<<", "<<m.verts[i][1]<<std::endl;
     }*/
-    /*
-    std::cout<<"is_air: ";
-    for (size_t i=0; i<m.verts.size(); i++){
-        std::cout<<m.is_air[i]<<", ";
-    }
-    std::cout<<std::endl;
-
-    std::cout<<"is_solid: ";
-    for (size_t i=0; i<m.verts.size(); i++){
-        std::cout<<m.is_solid[i]<<", ";
-    }
-    std::cout<<std::endl;
-
-    std::cout<<"is_triple: ";
-    for (size_t i=0; i<m.verts.size(); i++){
-        std::cout<<m.is_triple[i]<<", ";
-    }
-    std::cout<<std::endl;*/
+    
     step_advect(curr_t);
 
     //step_solidinfluxreverse();
 
-    //outputFrame("2.txt");
-
     remesh();
-    //std::cout<<"post remesh vec "<<m.verts.size()<<std::endl;
-    /*for (size_t i=0; i<m.verts.size(); i++){
-        std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
-    }
-    std::cout<<std::endl;*/
-
-    //std::cout<<"post collide vec "<<m.verts.size()<<std::endl;
-    /*for (size_t i=0; i<m.verts.size(); i++){
-        std::cout<<"("<<m.verts[i][0]<<", "<<m.verts[i][1]<<")";
-    }
-    std::cout<<std::endl;*/
+    
     step_HHD();
-    /*for (size_t i=0; i<m.vels.size(); i++){
-        std::cout<<m.vels[i][0]<<", "<<m.vels[i][1]<<std::endl;
-    }*/
-    step_gravity(); // body forces only applied on div-free velocity field.
+    
+    // body forces are only applied on div-free velocity field.
+    step_gravity();
 
     step_BEM();
-    //std::cout<<"post BEM vels "<<m.vels.size()<<std::endl;
-    /*for (size_t i=0; i<m.vels.size(); i++){
-        std::cout<<m.vels[i][0]<<", "<<m.vels[i][1]<<std::endl;
-    }*/
 
     //step_solidinflux();
 }
@@ -427,11 +393,9 @@ void Sim::step_HHD(){
                     double f_len = m.face_length(f_j);
 
                     if (f_i == f_j){ //singularity case 
-                        // gradPhi
-                        // contribution is 0 for this case
+                        // gradPhi: contribution is 0 for this case
 
-                        // curlA
-                        // split around the point
+                        // curlA: split around the point
                         for (size_t k=0; k<2; k++){
                             double val_curlA = 0;
                             double len = (x-m.verts[m.verts_from_face(f_j)[k]]).norm();
@@ -496,18 +460,6 @@ void Sim::step_HHD(){
             curlA[i] += II_curlA*m.face_length(f_i);
         }
     }
-    /*
-    std::cout<<"dPhidn: "<<std::endl;
-    for (size_t i=0;i<dPhidn.size();i++){
-        std::cout<<dPhidn[i]<<",";
-    }
-    std::cout<<std::endl;
-    std::cout<<"curlA: "<<std::endl;
-    for (size_t i=0;i<curlA.size();i++){
-        std::cout<<curlA[i]<<",";
-    }
-    std::cout<<std::endl;
-    */
 
     // constructing tangential projection
     std::vector<Eigen::Vector2d> V_t = std::vector<Eigen::Vector2d>(n,Eigen::Vector2d(0.0,0.0));
@@ -543,6 +495,7 @@ void Sim::step_BEM(){
     int N = m.verts.size();
     Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
     Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
+
     step_BEM_BC(BC_p, BC_dpdn);
     
     // reset p and dpdn, and make correct size
@@ -550,8 +503,8 @@ void Sim::step_BEM(){
     Eigen::VectorXd p = Eigen::VectorXd::Zero(N);
     Eigen::VectorXd dpdn = Eigen::VectorXd::Zero(N);
     // we are also trying to solve for V for each rigidbody
-    // although for now can just start with handling one rigidbody?
     std::vector<Eigen::Vector3d> V_rigidBodies(rigidBodies_unscripted.size(), Eigen::Vector3d::Zero());
+
     step_BEM_solve(BC_p, BC_dpdn, p, dpdn, V_rigidBodies);
     step_BEM_gradP(BC_p, BC_dpdn, p,dpdn);
     step_BEM_rigidBodyV(V_rigidBodies);
@@ -563,9 +516,6 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
     std::vector<bool> face_is_solid = m.get_solid_faces();
 
     double triple_junction_virtual_width = 0.25 * m.calc_avg_face_length();
-
-    //Eigen::VectorXd BC_p = Eigen::VectorXd::Zero(N);
-    //Eigen::VectorXd BC_dpdn = Eigen::VectorXd::Zero(N);
 
     for (size_t i=0; i<N; i++){
         Eigen::Vector2i incident_faces = m.faces_from_vert(i);
@@ -643,18 +593,6 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     int N = m.verts.size();
     std::vector<bool> face_is_solid = m.get_solid_faces();
 
-    /*
-    std::cout<<"x:";
-    for (size_t i=0; i<N; i++){
-        std::cout<<m.verts[i]<<std::endl;
-        std::cout<<"Solid: "<<m.is_solid[i]<<", Air: "<<m.is_air[i]<<", Triple: "<<m.is_triple[i]<<std::endl;
-    }
-    std::cout<<std::endl;
-
-    std::cout<<"p_input"<<BC_p<<std::endl;
-    std::cout<<"dpdn_input"<<BC_dpdn<<std::endl;
-    */
-
     // collocation equation:
     // omega_j p_j = \int p dGdny - \int dpdn G
     // omega_j p_j = \sum p_i \int theta_i dGdny - \sum dpdn_i \int theta_i G
@@ -707,11 +645,6 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                 } else{
                     // generic case -- no singularities
                     Eigen::Vector2d n_x = m.calc_face_normal(neighbor_faces[0]);
-                    /*if(i==0 && j==2){
-                        std::cout<<"PREV VERTEX:"<<std::endl;
-                        std::cout<<"from: "<<m.verts[i]<<std::endl;
-                        std::cout<<"to: "<<m.verts[prev_i]<<std::endl;
-                    }*/
                     for(size_t k=0; k<quad_N; k++){
                         double qk = quad_GQ[k].x();
                         double qw = quad_GQ[k].y();
@@ -719,32 +652,15 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                         double Mi = M_2(qk);
                         G_quad_prev += qw * BoundaryIntegral::G(x_i, y_j) * Mi;
                         dGdn_quad_prev += qw * BoundaryIntegral::dGdnx(x_i, y_j, n_x) * Mi;
-                        /*if(i==0 && j==2){
-                            std::cout<<"x_"<<k<<": "<<x_i<<std::endl;
-                            std::cout<<"y_"<<k<<": "<<y_j<<std::endl;
-                            std::cout<<"M_"<<k<<": "<<Mi<<std::endl;
-                            std::cout<<"qk: "<<qk<<std::endl;
-                            std::cout<<"qw: "<<qw<<std::endl;
-                            std::cout<<"G(x,y): "<<BoundaryIntegral::G(x_i, y_j)<<std::endl;
-                        }*/
                     }
                     G_quad_prev *= 0.5*d_prev;
                     dGdn_quad_prev *= 0.5*d_prev;
-                    /*if(i==0 && j==2){
-                        std::cout<<"i=0,j=2 G_prev: "<<G_quad_prev<<std::endl;
-                        std::cout<<"i=0,j=2 dGdn_prev: "<<dGdn_quad_prev<<std::endl;
-                    }*/
                 }
                 if (j==next_i){
                     G_quad_next = (d_next/2.0) * (log(d_next)-1.0/2.0) * negOneOver2pi;
                 } else{
                     // generic case -- no singularities
                     Eigen::Vector2d n_x = m.calc_face_normal(neighbor_faces[1]);
-                    /*if(i==0 && j==2){
-                        std::cout<<"NEXT VERTEX:"<<std::endl;
-                        std::cout<<"from: "<<m.verts[i]<<std::endl;
-                        std::cout<<"to: "<<m.verts[next_i]<<std::endl;
-                    }*/
                     for(size_t k=0; k<quad_N; k++){
                         double qk = quad_GQ[k].x();
                         double qw = quad_GQ[k].y();
@@ -752,22 +668,9 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                         double Mi = M_1(qk);
                         G_quad_next += qw * BoundaryIntegral::G(x_i, y_j) * Mi;
                         dGdn_quad_next += qw * BoundaryIntegral::dGdnx(x_i, y_j, n_x) * Mi;
-
-                        /*if(i==0 && j==2){
-                            std::cout<<"x_"<<k<<": "<<x_i<<std::endl;
-                            std::cout<<"y_"<<k<<": "<<y_j<<std::endl;
-                            std::cout<<"M_"<<k<<": "<<Mi<<std::endl;
-                            std::cout<<"qk: "<<qk<<std::endl;
-                            std::cout<<"qw: "<<qw<<std::endl;
-                            std::cout<<"G(x,y): "<<BoundaryIntegral::G(x_i, y_j)<<std::endl;
-                        }*/
                     }
                     G_quad_next *= 0.5*d_next;
                     dGdn_quad_next *= 0.5*d_next;
-                    /*if(i==0 && j==2){
-                        std::cout<<"i=0,j=2 G_next: "<<G_quad_next<<std::endl;
-                        std::cout<<"i=0,j=2 dGdn_next: "<<G_quad_next<<std::endl;
-                    }*/
                 }
             }
 
@@ -825,18 +728,6 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         }
     }
     Eigen::VectorXd rhs = rhs_per_vertex.rowwise().sum();
-
-    //std::cout<<"A: \n"<<A<<std::endl;
-    //std::cout<<"rhs: \n"<<rhs<<std::endl;
-
-    /*
-    // linear solve
-    // DIRECT - LU
-    //Eigen::VectorXd soln = A.lu().solve(rhs);
-    // ITERATIVE - BICGSTAB
-    Eigen::BiCGSTAB<Eigen::MatrixXd> solver(A);
-    Eigen::VectorXd soln = solver.solve(rhs);
-    */
 
     // constructing the different block parts of the modified A, rhs to deal with two-way coupling
     Eigen::MatrixXd rhs_scripted_contribution = Eigen::MatrixXd::Zero(N, 3*rigidBodies_scripted.size());
@@ -927,16 +818,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     std::cout<<"x: "<<soln<<std::endl;
     */
 
-    /*
-    std::cout<<"A: "<<A<<std::endl;
-    std::cout<<"rhs: "<<rhs<<std::endl;
-    std::cout<<"rhs_per_vertex: "<<rhs_per_vertex<<std::endl;
-    std::cout<<"x: "<<soln<<std::endl;
-    */
-
     // assembly
-    //Eigen::VectorXd p = BC_p;
-    //Eigen::VectorXd dpdn = BC_dpdn;
     for (size_t i=0; i<N; i++){
         if(m.is_air[i]){
             p[i] = BC_p[i];
@@ -978,13 +860,11 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     for (size_t i=0; i<N; i++){
         dpdt_face[i] = (p[m.verts_from_face(i)[1]] - p[m.verts_from_face(i)[0]])/m.face_length(i);
     }
-    //std::cout<<"dpdt_face: "<<dpdt_face<<std::endl;
     
     // we average back onto the vertices to get dpdt per vertex
     Eigen::VectorXd dpdt(N);
     for (size_t i=0; i<N; i++){
         Eigen::Vector2d t_i = -m.calc_vertex_tangent(i); // TODO: figure out why this needs to be sign flipped, what am I doing here that is wrong hmmm
-        //std::cout<<"t_"<<i<<": "<<t_i<<std::endl;
         Eigen::Vector2d n_i = m.calc_vertex_normal(i);
 
         Eigen::Vector2i neighbor_faces = m.faces_from_vert(i);
@@ -1018,15 +898,6 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                 dpdt_LA = dpdt_face[neighbor_faces[0]];
                 //dpdn_A = dpdn[i];
             }
-            /*
-            std::cout<<"for vert "<<i<<":"<<std::endl;
-            std::cout<<"t_SL: "<<t_SL<<std::endl;
-            std::cout<<"n_S: "<<n_S<<std::endl;
-            std::cout<<"dpdt_SL: "<<dpdt_SL<<std::endl;
-            std::cout<<"t_LA: "<<t_LA<<std::endl;
-            std::cout<<"n_A: "<<n_A<<std::endl;
-            std::cout<<"dpdt_LA: "<<dpdt_LA<<std::endl;
-            */
             Eigen::MatrixXd gradp_proj = Eigen::MatrixXd::Zero(4, 2);
             Eigen::VectorXd gradp_proj_rhs = Eigen::VectorXd::Zero(4);
             gradp_proj.row(0) = n_S.transpose();        gradp_proj_rhs[0] = BC_dpdn[i];                 // dpdn on the solid side
@@ -1049,9 +920,6 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     
     //std::cout<<"dpdt: "<<dpdt<<std::endl;
     
-    /*for (size_t i=0; i<m.verts.size(); i++){
-        std::cout<<dv[i][0]*-rho<<", "<<dv[i][1]*-rho<<std::endl;
-    }*/
     // accelerate to end of step velocity
     for (size_t i=0; i<m.verts.size(); i++){
         m.vels[i] += dv[i];
@@ -1125,8 +993,6 @@ void Sim::remesh(){
 }
 
 void Sim::collide(){
-    // then recalibrate triple points
-
     m.reset_boundary_types();
     // collide liquid mesh with each scripted solid
     for (size_t i=0; i<rigidBodies_scripted.size(); i++){
@@ -1136,7 +1002,7 @@ void Sim::collide(){
     for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
         rigidBodies_unscripted[i]->collideAndSnap(m);
     }
-
+    // recalibrate triple points
     m.update_triple_points();
 }
 void Sim::genMarkerParticles(double l, double r, double b, double t, double spacing){

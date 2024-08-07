@@ -28,5 +28,5 @@ markers-top 1
 markers-spacing 0.1
 
 num-rb 2
-rigid-body-file-1 ./in/solids/square_rb.txt
+rigid-body-file-1 ./in/solids/Lshape_rb.txt
 rigid-body-file-2 ./in/solids/cup_lower.txt

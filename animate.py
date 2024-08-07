@@ -117,7 +117,7 @@ for frame in range(start, end):
                 plt.text(1.4, -1.9, "n: {}".format(len(v)), fontsize = 11)
             
         
-        plt.text(-1.9, -1.7, "t: {curr_t:.3f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        plt.text(-1.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         plt.text(-1.9, -1.9, "Frame: {}".format(frame), fontsize = 11)
 
         #plt.show()
