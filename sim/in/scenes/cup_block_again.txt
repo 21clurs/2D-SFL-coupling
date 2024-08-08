@@ -3,13 +3,13 @@ size-outer 2.1
 
 time-step 0.005
 simulation-time 4
-output-frame-frequency 1
+output-frame-frequency 4
 gravity -1
 
 sigma-la 1
 sigma-sl 1
 sigma-sa 1
-rho 2
+rho 1
     
 mesh-size-n 90
 mesh-remesh-iters 6
@@ -28,5 +28,8 @@ markers-top 1
 markers-spacing 0.1
 
 num-rb 2
-rigid-body-file-1 ./in/solids/Lshape_rb.txt
+rigid-body-file-1 ./in/solids/square_rb.txt
+# rigid-body-file-1 ./in/solids/cup_box.txt
+# rigid-body-file-1 ./in/solids/Lshape_rb.txt
 rigid-body-file-2 ./in/solids/cup_lower.txt
+# rigid-body-file-3 ./in/solids/cup_lid.txt

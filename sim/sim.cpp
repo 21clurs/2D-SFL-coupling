@@ -293,9 +293,15 @@ void Sim::step_solidinflux(){
 */
 
 void Sim::step_advect(double t){
+    collide();
     // advect the liquid mesh
     for (size_t i=0; i<n; i++){
-        m.verts[i] = m.verts[i] + m.vels[i]*dt;
+        if (m.is_solid[i]){
+            m.verts[i] = m.verts[i] + m.vels_solid[i]*dt;
+        }
+        else{
+            m.verts[i] = m.verts[i] + m.vels[i]*dt;
+        }
     }
     // advect the scripted solids
     for (size_t i=0; i<rigidBodies_scripted.size(); i++){
@@ -994,13 +1000,13 @@ void Sim::remesh(){
 
 void Sim::collide(){
     m.reset_boundary_types();
-    // collide liquid mesh with each scripted solid
-    for (size_t i=0; i<rigidBodies_scripted.size(); i++){
-        rigidBodies_scripted[i]->collideAndSnap(m);
-    }
     // collide liquid mesh with each unscripted solid
     for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
         rigidBodies_unscripted[i]->collideAndSnap(m);
+    }
+    // collide liquid mesh with each scripted solid
+    for (size_t i=0; i<rigidBodies_scripted.size(); i++){
+        rigidBodies_scripted[i]->collideAndSnap(m);
     }
     // recalibrate triple points
     m.update_triple_points();

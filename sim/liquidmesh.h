@@ -40,7 +40,7 @@ class LiquidMesh : public Mesh
         void resize_mesh(size_t n);
 
         static bool loadMeshFromFile(LiquidMesh &l, std::string infileName);
-    private:
+    protected:
         std::vector<bool> is_air;
         std::vector<bool> is_solid;
         std::vector<bool> is_triple;

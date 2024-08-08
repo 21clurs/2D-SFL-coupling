@@ -4,6 +4,7 @@ height 1
 
 time-step 0.005
 simulation-time 4
+output-frame-frequency 4
 gravity -1
 
 sigma-la 1
@@ -27,6 +28,5 @@ markers-bottom -0.5
 markers-top 0.5
 markers-spacing 0.1
 
-num-rb 2
+num-rb 1
 rigid-body-file-1 ./in/solids/cup.txt
-rigid-body-file-2 ./in/solids/square_rb.txt
