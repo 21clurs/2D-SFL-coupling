@@ -19,6 +19,7 @@ if len(sys.argv)>1 and "-framerange" in sys.argv:
 for frame in range(start, end):
 
     vList = []  # vertices
+    vLiquidList = []
     fList = []  # faces
     vnList = [] # vertex normals
     vtList = [] # vertex tangents
@@ -38,12 +39,16 @@ for frame in range(start, end):
                     if len(r)>3:
                         if "c" in r[3]:
                             vColorList.append('g')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "a" in r[3]:
                             vColorList.append('#3ec1d5')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "s" in r[3]:
                             vColorList.append('#ff0070')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "t" in r[3]:
                             vColorList.append('#1b3481')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         else:
                             vColorList.append('k')
                     else:
@@ -114,7 +119,7 @@ for frame in range(start, end):
                 for i in range(len(u)):
                     plt.arrow(v[i,0], v[i,1], u[i,0]*0.5, u[i,1]*0.5, head_width=.05)
             if "-shownumpoints" in sys.argv:
-                plt.text(1.4, -1.9, "n: {}".format(len(v)), fontsize = 11)
+                plt.text(1.4, -1.9, "n: {}".format(len(vLiquidList)), fontsize = 11)
             
         
         plt.text(-1.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)

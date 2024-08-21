@@ -255,14 +255,14 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
         } else if (linetype.compare("theta") == 0){
             ss >> m.rotationTheta;
         } else if (linetype.compare("translation") == 0){
-            int a,b;
+            double a,b;
             ss >> a;
             ss >> b;
             m.translation = Eigen::Vector2d(a,b);
         } else if (linetype.compare("u_rotational") == 0){
             ss >> m.V_omega;
         } else if (linetype.compare("u_translational") == 0){
-            int a,b;
+            double a,b;
             ss >> a;
             ss >> b;
             m.V_t = Eigen::Vector2d(a,b);

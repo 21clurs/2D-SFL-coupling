@@ -1,9 +1,9 @@
 scene generic_square_donut
 size-outer 2.1
 
-time-step 0.005
-simulation-time 4
-output-frame-frequency 4
+time-step 0.001
+simulation-time 0.001
+output-frame-frequency 1
 gravity -1
 
 sigma-la 1
@@ -11,10 +11,10 @@ sigma-sl 1
 sigma-sa 1
 rho 1
     
-mesh-size-n 90
-mesh-remesh-iters 6
-mesh-edge-max-ratio 1.3
-mesh-edge-min-ratio 0.7
+mesh-size-n 200
+mesh-remesh-iters 10
+mesh-edge-max-ratio 1.1
+mesh-edge-min-ratio 0.9
 
 mesh-collision-epsilon 0.01
 
@@ -29,7 +29,7 @@ markers-spacing 0.1
 
 num-rb 2
 rigid-body-file-1 ./in/solids/square_rb.txt
-# rigid-body-file-1 ./in/solids/cup_box.txt
+# rigid-body-file-2 ./in/solids/cup_box.txt
 # rigid-body-file-1 ./in/solids/Lshape_rb.txt
 rigid-body-file-2 ./in/solids/cup_lower.txt
 # rigid-body-file-3 ./in/solids/cup_lid.txt

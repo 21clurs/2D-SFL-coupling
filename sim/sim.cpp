@@ -584,6 +584,7 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
             //BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
             BC_dpdn[i] = n_solid_outward.dot(m.vels[i] - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
+            //BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
         }
     }
 
@@ -748,6 +749,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             // populate matrix to contain relevant \sum(G*J^T) information
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
+                //if((m.is_solid[j] || m.is_triple[j]) && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
                 if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
                     Eigen::Vector2d n_j = m.calc_vertex_normal(j);
                     Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_scripted[k]->com, n_j));
@@ -765,6 +767,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             // populate A_topright block
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
+                //if((m.is_solid[j] || m.is_triple[j]) && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
                 if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
                     Eigen::Vector2d n_j = m.calc_vertex_normal(j);
                     Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_unscripted[k]->com, n_j));
@@ -774,18 +777,26 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             }
             A_topright.block(i,k*3,1,3) = rho * row.transpose();
 
-            // populate A_bottomleft block
             Eigen::Vector2d n_i = m.calc_vertex_normal(i);
             Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies_unscripted[k]->com, n_i));
+
+            // populate A_bottomleft block
             if (m.is_solid[i] && (m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id)){
                 A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i);         // remember, this is an integral so maybe multiply by area is important ?
             }
+            /*
+            // add in contributions relevant to triple points
+            if(m.is_triple[i] && m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id){
+                A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i);
+                rhs_tail.segment(3*k,3) -= J * m.vert_area(i) * BC_dpdn[i];
+            }
+            */
         }
         Eigen::Matrix3d M = Eigen::Matrix3d::Zero();
         M.diagonal() = Eigen::Vector3d(rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->moi);
         A_bottomright.block(k*3,k*3,3,3) =  (-1.0) * M; // took out 1/dt term
 
-        rhs_tail.segment(3*k,3) = (-1.0) * M * (rigidBodies_unscripted[k]->retrieveRigidBodyV()); // took out 1/dt term
+        rhs_tail.segment(3*k,3) += (-1.0) * M * (rigidBodies_unscripted[k]->retrieveRigidBodyV()); // took out 1/dt term
     }
     /*
     std::cout<<"A_topright: \n"<<A_topright<<std::endl;
@@ -799,6 +810,7 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     A_rb.block(0,0,N,N) = A;
     // copy rhs into the top of rhs_rb
     rhs_rb.head(N) = rhs;
+
 
     for (size_t k=0; k<rigidBodies_scripted.size(); k++){
         rhs_rb.head(N) = rhs_rb.head(N) - rhs_scripted_contribution.block(0,k*3,N,3)*(rigidBodies_scripted[k]->retrieveRigidBodyV());
@@ -935,6 +947,8 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 void Sim::step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies){
     for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
         rigidBodies_unscripted[i]->setRigidBodyV(V_rigidBodies[i]);
+        /*std::cout<<"Rigid body V: "<<V_rigidBodies[i]<<std::endl;
+        std::cout<<"n: "<<m.verts.size()<<std::endl;*/
     }
 }
 

@@ -126,31 +126,40 @@ void LiquidMesh::edge_collapse(){
     std::vector<bool> faces_to_delete(faces.size(), false);
     for (size_t i=0; i<n_old; i++){
     //std::cout<<"Edge length: "<<face_length(i)<<std::endl;
-        if (face_length(i) == 0 && !faces_to_delete[i]){ 
+        int endpt_a_ind = faces[i].x();
+        int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+        if (face_length(endpt_a_face) == 0 && !faces_to_delete[endpt_a_face]){ 
             // NEED to delete this, and should not be disruptive to do so
             n_collapse++;
 
-            int endpt_a_ind = faces[i].x();
-            int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+            //int endpt_a_ind = faces[i].x();
+            //int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
             
-            // merge current face with endpt_a_face (doesn't matter which endpoint, this is an arbitrary choice)
+            // merge current face with endpt_a_face
             faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind);
             verts_to_delete[endpt_a_ind] = true;
             faces_to_delete[endpt_a_face] = true;
 
+            //std::cout<<"A"<<endpt_a_face<<std::endl;
+
         } else if (face_length(i) < minFaceLength && !faces_to_delete[i]){
             // slightly more normal case
 
-            int endpt_a_ind = faces[i].x();
+            endpt_a_ind = faces[i].x();
             int endpt_b_ind = faces[i].y();
 
-            int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+            endpt_a_face = other_face_from_vert(endpt_a_ind, i);
             int endpt_b_face = other_face_from_vert(endpt_b_ind, i);
 
+            // don't bother deleting on this iteration if either of its neighbor faces are already marked
+            // this is just because I don't feel like going through all the cases there
             if (faces_to_delete[endpt_a_face] || faces_to_delete[endpt_b_face] ){
                 continue;
-                // maybe not the best logic, but maybe reasonable?
-            } else if (is_corner[endpt_a_ind] || is_corner[endpt_b_ind] ){
+            } else if (verts_to_delete[endpt_a_ind] || verts_to_delete[endpt_b_ind] ){
+                continue;
+            } 
+            // we also do not delete faces around the corners currently
+            if (is_corner[endpt_a_ind] || is_corner[endpt_b_ind] ){
                 continue;
             }
 
@@ -161,11 +170,13 @@ void LiquidMesh::edge_collapse(){
                 faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind); //check this
                 verts_to_delete[endpt_a_ind] = true;
                 faces_to_delete[endpt_a_face] = true;
+                //std::cout<<"B"<<endpt_a_face<<std::endl;
             } else if (is_triple[endpt_a_ind] && !is_triple[endpt_b_ind]){
                 // merge current face with endpt_b_face
                 faces[i].y() = other_vert_from_face(endpt_b_face, endpt_b_ind); //check this
                 verts_to_delete[endpt_b_ind] = true;
                 faces_to_delete[endpt_b_face] = true;
+                //std::cout<<"C"<<endpt_b_face<<std::endl;
             } else { //either both endpoints are triple points, or both are not
                 // -- a -- b --
                 if (face_length(endpt_a_face)>face_length(endpt_b_face)) {
@@ -173,11 +184,13 @@ void LiquidMesh::edge_collapse(){
                     faces[i].y() = other_vert_from_face(endpt_b_face, endpt_b_ind); //check this
                     verts_to_delete[endpt_b_ind] = true;
                     faces_to_delete[endpt_b_face] = true;
+                    //std::cout<<"D"<<endpt_b_face<<std::endl;
                 } else if (face_length(endpt_a_face)<face_length(endpt_b_face)){
                     // merge current face with endpt_a_face
                     faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind); //check this
                     verts_to_delete[endpt_a_ind] = true;
                     faces_to_delete[endpt_a_face] = true;
+                    //std::cout<<"E"<<endpt_a_face<<std::endl;
                 } else{
                     // collapse into the midpoint of the face
                     // implemented by moving endpoint a of my current face, and then merging current face with endpt_b_face
@@ -185,6 +198,7 @@ void LiquidMesh::edge_collapse(){
                     faces[i].y() = other_vert_from_face(endpt_b_face, endpt_b_ind); //check this
                     verts_to_delete[endpt_b_ind] = true;
                     faces_to_delete[endpt_b_face] = true;
+                    //std::cout<<"F"<<endpt_b_face<<std::endl;
                 }
             }
             
