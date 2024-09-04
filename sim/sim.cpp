@@ -253,6 +253,8 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
             file<<"f "<< m.faces.size()+ rigidBodies_unscripted[i]->faces[j][0] + count<<" "<< m.faces.size()+ rigidBodies_unscripted[i]->faces[j][1] + count<<std::endl;
         }
         count += rigidBodies_unscripted[i]->verts.size();
+
+        file<<"rb "<<rigidBodies_unscripted[i]->com.x()+rigidBodies_unscripted[i]->translation.x()<<" "<<rigidBodies_unscripted[i]->com.y()+rigidBodies_unscripted[i]->translation.y()<<" "<<rigidBodies_unscripted[i]->rotationTheta<<std::endl;
     }
     file<<std::endl;
 

@@ -27,6 +27,8 @@ for frame in range(start, end):
     vColorList = [] # vertice colours
     mpList = [] # marker particles
     #mpvList = [] # marker particle velocities
+    rbCOM = []
+    rbTheta = []
     dt = 0
     outFreq = 1
 
@@ -54,21 +56,25 @@ for frame in range(start, end):
                     else:
                         vColorList.append('k')
                 elif r[0] == 'f':
-                    fList.append([ int(r[1]), int(r[2])])
+                    fList.append([ int(r[1]), int(r[2]) ])
                 elif r[0] == 'vn':
-                    vnList.append([ float(r[1]), float(r[2])])
+                    vnList.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'vt':
-                    vtList.append([ float(r[1]), float(r[2])])
+                    vtList.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'u':
-                    uList.append([ float(r[1]), float(r[2])])
+                    uList.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'p':
-                    mpList.append([ float(r[1]), float(r[2])])
+                    mpList.append([ float(r[1]), float(r[2]) ])
                 #elif r[0] == 'pv':
                     #mpvList.append([ float(r[1]), float(r[2])])
                 elif r[0] == 'dt':
                     dt = float(r[1])
                 elif r[0] == 'out-freq':
                     outFreq = float(r[1])
+                elif r[0] == 'rb':
+                    rbCOM.append([ float(r[1]), float(r[2]) ])
+                    rbTheta.append(float(r[3]))
+
 
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
@@ -88,19 +94,12 @@ for frame in range(start, end):
             if(vColorList[indexStart] == 'k' or vColorList[indexEnd] == 'k' ):
                 faceColor = "#50a0c8"
             plt.plot(xPts, yPts, faceColor)
-
-        if "-showpoints" in sys.argv:
-            for j in range(len(v)):
-                vertex = v[j]
-                if vColorList[j] != 'k':
-                    plt.plot(vertex[0], vertex[1],marker=".",color=vColorList[j])
-        
-        if "-showmarkers" in sys.argv:
-            for j in range(len(mp)):
-                particle = mp[j]
-                #vel = mpv[j]
-                plt.plot(particle[0], particle[1], marker=".", markersize=1,color='r')
-                #plt.arrow(particle[0], particle[1], vel[0]*0.5, vel[1]*0.5, head_width=.05)
+        for i in range(len(rbCOM)):
+            rMatrix = np.array([ [np.cos(rbTheta[i]), -np.sin(rbTheta[i])] , [np.sin(rbTheta[i]), np.cos(rbTheta[i])] ])
+            north = 0.1 *  np.dot(rMatrix, np.array([0.0, 1.0]))
+            plt.arrow(rbCOM[i][0], rbCOM[i][1], north[0], north[1], head_width=.05)
+            east = 0.1 * np.dot(rMatrix, np.array([1.0, 0.0]))
+            plt.arrow(rbCOM[i][0], rbCOM[i][1], east[0], east[1], head_width=.05)
 
         # set axes
         ax = plt.gca()
@@ -109,6 +108,17 @@ for frame in range(start, end):
         ax.set_aspect('equal')
 
         if len(sys.argv)>1:
+            if "-showpoints" in sys.argv:
+                for j in range(len(v)):
+                    vertex = v[j]
+                    if vColorList[j] != 'k':
+                        plt.plot(vertex[0], vertex[1],marker=".",color=vColorList[j])
+            if "-showmarkers" in sys.argv:
+                for j in range(len(mp)):
+                    particle = mp[j]
+                    #vel = mpv[j]
+                    plt.plot(particle[0], particle[1], marker=".", markersize=1,color='r')
+                    #plt.arrow(particle[0], particle[1], vel[0]*0.5, vel[1]*0.5, head_width=.05)
             if "-shownorms" in sys.argv:
                 for i in range(len(vn)):
                     plt.arrow(v[i,0], v[i,1], vn[i,0]*0.2, vn[i,1]*0.2, head_width=.05)
