@@ -157,6 +157,9 @@ double Mesh::solid_angle(const int vertIndex){
     double theta = M_PI - turning_angle(t_prev,t_next);
     return theta; ///(2*M_PI);
 }
+bool Mesh::solid_angle_is_acute(const int vertIndex){
+    return (abs(solid_angle(vertIndex)) <= (M_PI/2)+0.1 || abs(solid_angle(vertIndex)) >= 2*M_PI - ((M_PI/2)+0.1));
+}
 double Mesh::signed_mean_curvature(const int vertIndex){
     Eigen::Vector2d t_prev = verts[vertIndex] - prev_neighbor(vertIndex);
     Eigen::Vector2d t_next = next_neighbor(vertIndex) - verts[vertIndex];

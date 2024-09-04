@@ -174,23 +174,31 @@ namespace {
             f[n_outer + i] = Eigen::Vector2i(n_outer + (i+1)%n_inner, n_outer + i);
     }
     void gen_generic_donut(int n, const Eigen::Vector2d& center, double r_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
-        // creates a rough circular donut around an arbitrary rigid body shape in the middle
-        v.resize(n);
-        f.resize(n);
-        
         // assumes at least one rigid body that this donut spawns around
         assert(SimOptions::intValue("num-rb") >= 1);
         RigidBody *m = new RigidBody();
         RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
 
         int n_inner = m->verts.size();
+        int n_outer = n;
+        n_outer = n_outer + n_outer%4;
+
+        n = n_inner + n_outer;
+
+        // creates a rough square donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+        
+        // creates a rough circular donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+
         for (size_t i=0; i<n_inner; i++){
             v[i] = m->verts[i];
             f[i] = Eigen::Vector2i(m->faces[i].y(),m->faces[i].x());
         }
 
         // then the circle
-        int n_outer = n - n_inner;
         float theta = 2*M_PI/n_outer;
         for (size_t i=0; i<n_outer; i++){
             v[i+n_inner].x() = r_outer*cos(theta*i) + center.x();
@@ -207,7 +215,7 @@ namespace {
         RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
 
         int n_inner = m->verts.size();
-        int n_outer = n - n_inner;
+        int n_outer = n;
         n_outer = n_outer + n_outer%4;
 
         n = n_inner + n_outer;

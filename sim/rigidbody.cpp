@@ -164,19 +164,22 @@ void RigidBody::collideAndSnap(LiquidMesh& l){
         for (size_t i = 0; i<faces.size(); i++){
 
             // retrieve endpoints of current face, these should be oriented
-            Eigen::Vector2d ptA = verts[faces[i][0]];
-            Eigen::Vector2d ptB = verts[faces[i][1]];
+            int ptA_ind = faces[i][0];
+            int ptB_ind = faces[i][1];
 
-            Eigen::Vector2d ptA_vel = vels[faces[i][0]];
-            Eigen::Vector2d ptB_vel = vels[faces[i][1]];
+            Eigen::Vector2d ptA = verts[ptA_ind];
+            Eigen::Vector2d ptB = verts[ptB_ind];
+
+            Eigen::Vector2d ptA_vel = vels[ptA_ind];
+            Eigen::Vector2d ptB_vel = vels[ptB_ind];
 
             // first check to snap to 'sharp' features in geometry, if so, we can skip the rest of the loop
-            if ((curr_pt-ptA).norm()<epsilon){
+            if ((curr_pt-ptA).norm()<epsilon && solid_angle_is_acute(ptA_ind)){
                 min_d = (curr_pt-ptA).norm();
                 nearest_pt = ptA;
                 pt_snapped_to_solid_corner = true;
                 break;
-            } else if ((curr_pt-ptB).norm()<epsilon){
+            } else if ((curr_pt-ptB).norm()<epsilon && solid_angle_is_acute(ptB_ind)){
                 min_d = (curr_pt-ptB).norm();
                 nearest_pt = ptB;
                 pt_snapped_to_solid_corner = true;
@@ -196,6 +199,7 @@ void RigidBody::collideAndSnap(LiquidMesh& l){
                     double g0 = (ptA - curr_pt).squaredNorm();
                     double g1 = (ptB - curr_pt).squaredNorm();
                     proj_pt = g0 < g1 ? ptA : ptB;
+                    // snap to solid corner here too probably
                 }
             
                 // logic to get minimal distance to a segment in the SolidMesh

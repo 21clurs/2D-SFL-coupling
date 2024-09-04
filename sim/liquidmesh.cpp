@@ -365,9 +365,26 @@ std::vector<bool> LiquidMesh::get_solid_faces(){
     Eigen::Vector2i endpts;
     for (size_t i=0; i<faces.size(); i++){
         endpts = verts_from_face(i);
-        solid_faces[i] = (is_solid[endpts[0]] || is_solid[endpts[1]]);
+        // for now this interprets  anything with two triple points at the ends as a solid face...
+        //solid_faces[i] = ( (is_solid[endpts[0]]||is_triple[endpts[0]]) && (is_solid[endpts[1]||is_triple[endpts[1]]]) );
+        solid_faces[i] = (is_solid[endpts[0]] || is_solid[endpts[1]]) || (is_triple[endpts[0]] && is_triple[endpts[1]]);
     }
     return solid_faces;
+}
+
+const Eigen::Vector2d LiquidMesh::calc_vertex_solid_normal(const int vertIndex){
+    Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
+    // figure out which face is the solid face
+    // return normal of that face
+    // this is NOT super robust. I think I miss a LOT of edge cases here, especially to do with the triple points
+    Eigen::Vector2d n_solid;
+    if (is_air[other_vert_from_face(adjacent_face_inds[0], vertIndex)]){
+        n_solid = calc_face_normal(adjacent_face_inds[1]);
+    } else {
+        n_solid = calc_face_normal(adjacent_face_inds[0]);
+    }
+    n_solid.normalize();
+    return n_solid;
 }
 
 void LiquidMesh::update_triple_points(){

@@ -104,7 +104,7 @@ for frame in range(start, end):
 
         # set axes
         ax = plt.gca()
-        ax.set_xlim([-2, 2])
+        ax.set_xlim([-3, 3])
         ax.set_ylim([-2, 2])
         ax.set_aspect('equal')
 

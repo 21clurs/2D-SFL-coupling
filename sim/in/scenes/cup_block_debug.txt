@@ -1,19 +1,18 @@
-scene rectangle
-width 2.1
-height 2.1
+scene generic_square_donut
+size-outer 2.1
 
-time-step 0.005
-simulation-time 4
-output-frame-frequency 4
-gravity 1
+time-step 0.002
+simulation-time 20
+output-frame-frequency 20
+gravity -1
 
 sigma-la 1
 sigma-sl 1
 sigma-sa 1
 rho 1
     
-mesh-size-n 10
-mesh-remesh-iters 6
+mesh-size-n 4
+mesh-remesh-iters 8
 mesh-edge-max-ratio 1.3
 mesh-edge-min-ratio 0.7
 
@@ -28,6 +27,6 @@ markers-bottom -1
 markers-top 1
 markers-spacing 0.1
 
-num-rb 1
-# rigid-body-file-1 ./in/solids/square_rb_higher.txt
-rigid-body-file-1 ./in/solids/cup_lower.txt
+num-rb 2
+rigid-body-file-1 ./in/solids/square_rb.txt
+rigid-body-file-2 ./in/solids/cup_lower.txt

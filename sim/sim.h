@@ -39,6 +39,7 @@ class Sim
 
         static bool setAndLoadSimOptions(std::string infileName);
         void run();
+        void runTest();
 
         static double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
     private:
@@ -61,7 +62,7 @@ class Sim
         std::vector<RigidBody*> rigidBodies_scripted;
         std::vector<RigidBody*> rigidBodies_unscripted;
 
-        void remesh();
+        void remesh(int remesh_itr);
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);
         double M_1(double t);

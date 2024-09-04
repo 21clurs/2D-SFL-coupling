@@ -48,6 +48,7 @@ class Mesh
 
         double signed_mean_curvature(const int vertIndex);
         double solid_angle(const int vertIndex);
+        bool solid_angle_is_acute(const int vertIndex);
 
         double windingNumber(const Eigen::Vector2d& x);
     protected:

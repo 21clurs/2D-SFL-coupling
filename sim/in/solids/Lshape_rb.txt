@@ -14,7 +14,7 @@ f 5 0
 
 translation 0 0
 
-u_rotational 0
+u_rotational 1
 u_translational 0 0
 
-rho 1.5
+# rho 1.5

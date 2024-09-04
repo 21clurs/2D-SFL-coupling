@@ -1,0 +1,26 @@
+v -.2 0
+v .2 0
+v .5 .3
+v .4 .3
+v .2 .1
+v -.2 .1
+v -.4 .3
+v -.5 .3
+
+f 0 1
+f 1 2
+f 2 3
+f 3 4
+f 4 5
+f 5 6
+f 6 7
+f 7 0
+
+
+theta 0
+translation 0 .98
+
+u_rotational 0
+u_translational 0 0
+
+rho 0.3
