@@ -98,7 +98,7 @@ bool SimOptions::loadSimOptions(std::string infileName){
 
         std::string key;
         ss >> key;
-        if (key == "#" || key == "" || ss.eof())    // skip comment lines and empty lines
+        if (key == "#" || key == "//" || key == "" || ss.eof())    // skip comment lines and empty lines
             continue;
         
         std::map<std::string, SimOption>::iterator i = sim_options.find(key);

@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 #include "liquidmesh.h"
-#include "solidmesh.h"
 #include "rigidbody.h"
 
 class Sim
@@ -18,7 +17,6 @@ class Sim
         Sim(LiquidMesh& m, int n, float dt); 
         ~Sim(); // need to manually delete stuff in the solids vector...
 
-        void addSolid(SolidMesh* solid);
         void addRigidBody(RigidBody* rigidBody);
 
         bool outputFrame(std::string filename, std::string filelocation="./out/");
@@ -36,11 +34,12 @@ class Sim
         void collide();
 
         void genMarkerParticles(double l, double r, double b, double t, double spacing);
-        Eigen::Vector2d HHD_FD(Eigen::Vector2d x, double delta); 
-        std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
+        Eigen::Vector2d HHD_interior(Eigen::Vector2d x, double delta); 
+        std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESE
 
         static bool setAndLoadSimOptions(std::string infileName);
         void run();
+        void runTest();
 
         static double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
     private:
@@ -48,26 +47,31 @@ class Sim
         float dt;
         LiquidMesh m;
 
+        int outframe_frequency;
+
         // simulation parameters
         double sigma, sigma_SL, sigma_SA;
         double rho;
         Eigen::Vector2d gravity;
 
         // solid objects in the sim
-        std::vector<SolidMesh*> solids;
+        //std::vector<SolidMesh*> solids;
         // rigid bodies in the sim
-        std::vector<RigidBody*> rigidBodies;
+        //std::vector<RigidBody*> rigidBodies;
 
-        void remesh();
+        std::vector<RigidBody*> rigidBodies_scripted;
+        std::vector<RigidBody*> rigidBodies_unscripted;
+
+        void remesh(int remesh_itr);
 
         Eigen::Vector2d lin_interp(Eigen::Vector2d v_a, Eigen::Vector2d v_b, double q);
         double M_1(double t);
         double M_2(double t);
 
         void step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn);
-        void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn);
+        void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn, std::vector<Eigen::Vector3d>& V_rigidBodies);
         void step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn);
-
+        void step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies);
 };
 
 #endif

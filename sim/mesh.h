@@ -8,9 +8,10 @@ class Mesh
 {
     friend class Sim;
     friend class TestingHelpers;
-    protected:
+    public:
         std::vector<Eigen::Vector2d> verts;
         std::vector<Eigen::Vector2i> faces;     // assuming these are organized in some orientation [prev vertex, next vertex]
+    protected:
         std::vector<Eigen::Vector2d> vels;
 
         // these are populated once at construction, and updated when the mesh is modified (i.e. edge splits, collapses)
@@ -47,6 +48,7 @@ class Mesh
 
         double signed_mean_curvature(const int vertIndex);
         double solid_angle(const int vertIndex);
+        bool solid_angle_is_acute(const int vertIndex);
 
         double windingNumber(const Eigen::Vector2d& x);
     protected:

@@ -1,8 +1,7 @@
 scene generic_donut
-// scene-file ./in/liquids/donut_with_rect.txt
 
 time-step 0.005
-simulation-time 2
+simulation-time 4
 gravity 0
 
 sigma-la 1
@@ -20,7 +19,6 @@ mesh-collision-epsilon 0.01
 mesh-initial-velocity zero
 
 radius-outer 1
-radius-inner 0.5
 
 show-marker-particles 1
 markers-left -1.0
@@ -30,4 +28,4 @@ markers-top 1.0
 markers-spacing 0.1
 
 num-rb 1
-rigid-body-file-1 ./in/solids/diamond_rb.txt
+rigid-body-file-1 ./in/solids/Lshape_rb.txt

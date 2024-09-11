@@ -19,6 +19,7 @@ if len(sys.argv)>1 and "-framerange" in sys.argv:
 for frame in range(start, end):
 
     vList = []  # vertices
+    vLiquidList = []
     fList = []  # faces
     vnList = [] # vertex normals
     vtList = [] # vertex tangents
@@ -26,6 +27,12 @@ for frame in range(start, end):
     vColorList = [] # vertice colours
     mpList = [] # marker particles
     #mpvList = [] # marker particle velocities
+    rbCOM = []
+    rbTheta = []
+    dt = 0
+    outFreq = 1
+    bgFieldPos = []
+    bgFieldVel = []
 
     if os.path.isfile(outdir+str(frame)+".txt"):
         with open(outdir+str(frame)+".txt","r") as curr_frame_file:
@@ -36,28 +43,42 @@ for frame in range(start, end):
                     if len(r)>3:
                         if "c" in r[3]:
                             vColorList.append('g')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "a" in r[3]:
                             vColorList.append('#3ec1d5')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "s" in r[3]:
                             vColorList.append('#ff0070')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "t" in r[3]:
                             vColorList.append('#1b3481')
+                            vLiquidList.append([ float(r[1]), float(r[2])])
                         else:
                             vColorList.append('k')
                     else:
                         vColorList.append('k')
                 elif r[0] == 'f':
-                    fList.append([ int(r[1]), int(r[2])])
+                    fList.append([ int(r[1]), int(r[2]) ])
                 elif r[0] == 'vn':
-                    vnList.append([ float(r[1]), float(r[2])])
+                    vnList.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'vt':
-                    vtList.append([ float(r[1]), float(r[2])])
+                    vtList.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'u':
-                    uList.append([ float(r[1]), float(r[2])])
+                    uList.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'p':
-                    mpList.append([ float(r[1]), float(r[2])])
+                    mpList.append([ float(r[1]), float(r[2]) ])
                 #elif r[0] == 'pv':
                     #mpvList.append([ float(r[1]), float(r[2])])
+                elif r[0] == 'dt':
+                    dt = float(r[1])
+                elif r[0] == 'out-freq':
+                    outFreq = float(r[1])
+                elif r[0] == 'rb':
+                    rbCOM.append([ float(r[1]), float(r[2]) ])
+                    rbTheta.append(float(r[3]))
+                elif r[0] == 'bg':
+                    bgFieldPos.append([ float(r[1]), float(r[2]) ])
+                    bgFieldVel.append([ float(r[3]), float(r[4]) ])
 
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
@@ -77,27 +98,31 @@ for frame in range(start, end):
             if(vColorList[indexStart] == 'k' or vColorList[indexEnd] == 'k' ):
                 faceColor = "#50a0c8"
             plt.plot(xPts, yPts, faceColor)
-
-        if "-showpoints" in sys.argv:
-            for j in range(len(v)):
-                vertex = v[j]
-                if vColorList[j] != 'k':
-                    plt.plot(vertex[0], vertex[1],marker=".",color=vColorList[j])
-        
-        if "-showmarkers" in sys.argv:
-            for j in range(len(mp)):
-                particle = mp[j]
-                #vel = mpv[j]
-                plt.plot(particle[0], particle[1], marker=".", markersize=1,color='r')
-                #plt.arrow(particle[0], particle[1], vel[0]*0.5, vel[1]*0.5, head_width=.05)
+        for i in range(len(rbCOM)):
+            rMatrix = np.array([ [np.cos(rbTheta[i]), -np.sin(rbTheta[i])] , [np.sin(rbTheta[i]), np.cos(rbTheta[i])] ])
+            north = 0.1 *  np.dot(rMatrix, np.array([0.0, 1.0]))
+            plt.arrow(rbCOM[i][0], rbCOM[i][1], north[0], north[1], head_width=.05)
+            east = 0.1 * np.dot(rMatrix, np.array([1.0, 0.0]))
+            plt.arrow(rbCOM[i][0], rbCOM[i][1], east[0], east[1], head_width=.05)
 
         # set axes
         ax = plt.gca()
-        ax.set_xlim([-2, 2])
+        ax.set_xlim([-3, 3])
         ax.set_ylim([-2, 2])
         ax.set_aspect('equal')
 
         if len(sys.argv)>1:
+            if "-showpoints" in sys.argv:
+                for j in range(len(v)):
+                    vertex = v[j]
+                    if vColorList[j] != 'k':
+                        plt.plot(vertex[0], vertex[1],marker=".",color=vColorList[j])
+            if "-showmarkers" in sys.argv:
+                for j in range(len(mp)):
+                    particle = mp[j]
+                    #vel = mpv[j]
+                    plt.plot(particle[0], particle[1], marker=".", markersize=1,color='r')
+                    #plt.arrow(particle[0], particle[1], vel[0]*0.5, vel[1]*0.5, head_width=.05)
             if "-shownorms" in sys.argv:
                 for i in range(len(vn)):
                     plt.arrow(v[i,0], v[i,1], vn[i,0]*0.2, vn[i,1]*0.2, head_width=.05)
@@ -108,8 +133,13 @@ for frame in range(start, end):
                 for i in range(len(u)):
                     plt.arrow(v[i,0], v[i,1], u[i,0]*0.5, u[i,1]*0.5, head_width=.05)
             if "-shownumpoints" in sys.argv:
-                plt.text(1.4, -1.9, "n: {}".format(len(v)), fontsize = 11)
+                plt.text(1.4, -1.9, "n: {}".format(len(vLiquidList)), fontsize = 11)
+            if "-showfield" in sys.argv:
+                for i in range(len(bgFieldPos)):
+                    plt.arrow(bgFieldPos[i][0], bgFieldPos[i][1], bgFieldVel[i][0]*.5, bgFieldVel[i][1]*.5, head_width=.02, color="b")
             
+        
+        plt.text(-1.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         plt.text(-1.9, -1.9, "Frame: {}".format(frame), fontsize = 11)
 
         #plt.show()

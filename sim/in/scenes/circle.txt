@@ -1,4 +1,4 @@
-scene semicircle_horizontal
+scene circle
 radius 1
 
 time-step 0.01
@@ -10,11 +10,18 @@ sigma-sl 1
 sigma-sa 1
 rho 1
     
-mesh-size-n 32
+mesh-size-n 64
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.1
 mesh-edge-min-ratio 0.9
 
 mesh-collision-epsilon 0.01
 
-mesh-initial-velocity zero
+mesh-initial-velocity rotational_cw
+
+show-marker-particles 1
+markers-left -1.0
+markers-right 1.0
+markers-bottom -1.0
+markers-top 1.0
+markers-spacing 0.1

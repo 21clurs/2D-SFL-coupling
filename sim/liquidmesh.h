@@ -10,6 +10,7 @@ class LiquidMesh : public Mesh
     friend class Sim;
     friend class Scenes;
     friend class SolidMesh;
+    friend class RigidBody;
     friend class TestingHelpers;
     protected:
         std::vector<Eigen::Vector2d> vels_solid;
@@ -24,6 +25,7 @@ class LiquidMesh : public Mesh
         void set_boundaries_for_vertex(int i, bool air, bool solid, bool triple, bool corner);
 
         std::vector<bool> get_solid_faces();
+        const Eigen::Vector2d calc_vertex_solid_normal(const int vertIndex);
 
         void remesh();
 
@@ -37,12 +39,16 @@ class LiquidMesh : public Mesh
         double signed_min_dist(Eigen::Vector2d x);
 
         void resize_mesh(size_t n);
-    private:
+
+        static bool loadMeshFromFile(LiquidMesh &l, std::string infileName);
+    protected:
         std::vector<bool> is_air;
         std::vector<bool> is_solid;
         std::vector<bool> is_triple;
 
         std::vector<bool> is_corner;
+
+        std::vector<uint> per_vertex_rb_contact;
 
         void update_triple_points();
 

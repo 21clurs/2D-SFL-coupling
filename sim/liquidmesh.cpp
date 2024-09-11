@@ -1,5 +1,7 @@
 #include "liquidmesh.h"
+#include <fstream>
 #include <iostream>
+#include "simoptions.h"
 
 LiquidMesh::LiquidMesh() : Mesh(){
     vels_solid = std::vector<Eigen::Vector2d>(verts.size(), Eigen::Vector2d(0.0, 0.0));// defaults to purely liquid-air boundary?
@@ -9,6 +11,8 @@ LiquidMesh::LiquidMesh() : Mesh(){
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
+
+    per_vertex_rb_contact = std::vector<uint>(verts.size(), 0);
 }
 
 LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::vector<Eigen::Vector2i>& in_faces) :
@@ -22,6 +26,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
+
+    per_vertex_rb_contact = std::vector<uint>(verts.size(), 0);
 
     reset_face_length_limits();
 }
@@ -37,6 +43,8 @@ LiquidMesh::LiquidMesh(const std::vector<Eigen::Vector2d>& in_verts, const std::
     is_triple = std::vector<bool>(verts.size(), false);
 
     is_corner = std::vector<bool>(verts.size(), false);
+
+    per_vertex_rb_contact = std::vector<uint>(verts.size(), 0);
 
     reset_face_length_limits();
 }
@@ -56,6 +64,8 @@ void LiquidMesh::resize_mesh(size_t n){
     is_triple.resize(n);
 
     is_corner.resize(n);
+
+    per_vertex_rb_contact.resize(n);
 }
 
 void LiquidMesh::set_boundaries(std::vector<bool> air, std::vector<bool> solid, std::vector<bool> triple){
@@ -116,31 +126,40 @@ void LiquidMesh::edge_collapse(){
     std::vector<bool> faces_to_delete(faces.size(), false);
     for (size_t i=0; i<n_old; i++){
     //std::cout<<"Edge length: "<<face_length(i)<<std::endl;
-        if (face_length(i) == 0 && !faces_to_delete[i]){ 
+        int endpt_a_ind = faces[i].x();
+        int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+        if (face_length(endpt_a_face) == 0 && !faces_to_delete[endpt_a_face]){ 
             // NEED to delete this, and should not be disruptive to do so
             n_collapse++;
 
-            int endpt_a_ind = faces[i].x();
-            int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+            //int endpt_a_ind = faces[i].x();
+            //int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
             
-            // merge current face with endpt_a_face (doesn't matter which endpoint, this is an arbitrary choice)
+            // merge current face with endpt_a_face
             faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind);
             verts_to_delete[endpt_a_ind] = true;
             faces_to_delete[endpt_a_face] = true;
 
+            //std::cout<<"A"<<endpt_a_face<<std::endl;
+
         } else if (face_length(i) < minFaceLength && !faces_to_delete[i]){
             // slightly more normal case
 
-            int endpt_a_ind = faces[i].x();
+            endpt_a_ind = faces[i].x();
             int endpt_b_ind = faces[i].y();
 
-            int endpt_a_face = other_face_from_vert(endpt_a_ind, i);
+            endpt_a_face = other_face_from_vert(endpt_a_ind, i);
             int endpt_b_face = other_face_from_vert(endpt_b_ind, i);
 
+            // don't bother deleting on this iteration if either of its neighbor faces are already marked
+            // this is just because I don't feel like going through all the cases there
             if (faces_to_delete[endpt_a_face] || faces_to_delete[endpt_b_face] ){
                 continue;
-                // maybe not the best logic, but maybe reasonable?
-            } else if (is_corner[endpt_a_ind] || is_corner[endpt_b_ind] ){
+            } else if (verts_to_delete[endpt_a_ind] || verts_to_delete[endpt_b_ind] ){
+                continue;
+            } 
+            // we also do not delete faces around the corners currently
+            if (is_corner[endpt_a_ind] || is_corner[endpt_b_ind] ){
                 continue;
             }
 
@@ -151,11 +170,13 @@ void LiquidMesh::edge_collapse(){
                 faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind); //check this
                 verts_to_delete[endpt_a_ind] = true;
                 faces_to_delete[endpt_a_face] = true;
+                //std::cout<<"B"<<endpt_a_face<<std::endl;
             } else if (is_triple[endpt_a_ind] && !is_triple[endpt_b_ind]){
                 // merge current face with endpt_b_face
                 faces[i].y() = other_vert_from_face(endpt_b_face, endpt_b_ind); //check this
                 verts_to_delete[endpt_b_ind] = true;
                 faces_to_delete[endpt_b_face] = true;
+                //std::cout<<"C"<<endpt_b_face<<std::endl;
             } else { //either both endpoints are triple points, or both are not
                 // -- a -- b --
                 if (face_length(endpt_a_face)>face_length(endpt_b_face)) {
@@ -163,11 +184,13 @@ void LiquidMesh::edge_collapse(){
                     faces[i].y() = other_vert_from_face(endpt_b_face, endpt_b_ind); //check this
                     verts_to_delete[endpt_b_ind] = true;
                     faces_to_delete[endpt_b_face] = true;
+                    //std::cout<<"D"<<endpt_b_face<<std::endl;
                 } else if (face_length(endpt_a_face)<face_length(endpt_b_face)){
                     // merge current face with endpt_a_face
                     faces[i].x() = other_vert_from_face(endpt_a_face, endpt_a_ind); //check this
                     verts_to_delete[endpt_a_ind] = true;
                     faces_to_delete[endpt_a_face] = true;
+                    //std::cout<<"E"<<endpt_a_face<<std::endl;
                 } else{
                     // collapse into the midpoint of the face
                     // implemented by moving endpoint a of my current face, and then merging current face with endpt_b_face
@@ -175,6 +198,7 @@ void LiquidMesh::edge_collapse(){
                     faces[i].y() = other_vert_from_face(endpt_b_face, endpt_b_ind); //check this
                     verts_to_delete[endpt_b_ind] = true;
                     faces_to_delete[endpt_b_face] = true;
+                    //std::cout<<"F"<<endpt_b_face<<std::endl;
                 }
             }
             
@@ -265,6 +289,8 @@ void LiquidMesh::edge_collapse(){
         is_triple = is_triple_remeshed;
 
         is_corner = is_corner_remeshed;
+
+        per_vertex_rb_contact.resize(verts.size());
     }
     assert(faces.size() == n_old - n_collapse);
     assert(verts.size() == n_old - n_collapse);
@@ -276,6 +302,8 @@ void LiquidMesh::edge_collapse(){
     assert(is_triple.size() == verts.size());
 
     assert(is_corner.size() == verts.size());
+
+    assert(per_vertex_rb_contact.size() == verts.size());
 
     update_neighbor_face_vecs();
     
@@ -325,6 +353,9 @@ void LiquidMesh::edge_split(){
     assert(is_triple.size() == verts.size());
 
     assert(is_corner.size() == verts.size());
+
+    per_vertex_rb_contact.resize(verts.size());
+    assert(per_vertex_rb_contact.size() == verts.size());
     
     update_neighbor_face_vecs();
 }
@@ -334,9 +365,26 @@ std::vector<bool> LiquidMesh::get_solid_faces(){
     Eigen::Vector2i endpts;
     for (size_t i=0; i<faces.size(); i++){
         endpts = verts_from_face(i);
-        solid_faces[i] = (is_solid[endpts[0]] || is_solid[endpts[1]]);
+        // for now this interprets  anything with two triple points at the ends as a solid face...
+        //solid_faces[i] = ( (is_solid[endpts[0]]||is_triple[endpts[0]]) && (is_solid[endpts[1]||is_triple[endpts[1]]]) );
+        solid_faces[i] = (is_solid[endpts[0]] || is_solid[endpts[1]]) || (is_triple[endpts[0]] && is_triple[endpts[1]]);
     }
     return solid_faces;
+}
+
+const Eigen::Vector2d LiquidMesh::calc_vertex_solid_normal(const int vertIndex){
+    Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
+    // figure out which face is the solid face
+    // return normal of that face
+    // this is NOT super robust. I think I miss a LOT of edge cases here, especially to do with the triple points
+    Eigen::Vector2d n_solid;
+    if (is_air[other_vert_from_face(adjacent_face_inds[0], vertIndex)]){
+        n_solid = calc_face_normal(adjacent_face_inds[1]);
+    } else {
+        n_solid = calc_face_normal(adjacent_face_inds[0]);
+    }
+    n_solid.normalize();
+    return n_solid;
 }
 
 void LiquidMesh::update_triple_points(){
@@ -358,8 +406,8 @@ void LiquidMesh::reset_boundary_types(){
     is_corner = std::vector<bool>(is_corner.size(), false);
 }
 void LiquidMesh::reset_face_length_limits(){
-    minFaceLength = 0.7*calc_avg_face_length();
-    maxFaceLength = 1.3*calc_avg_face_length();
+    minFaceLength = SimOptions::doubleValue("mesh-edge-min-ratio")*calc_avg_face_length();
+    maxFaceLength = SimOptions::doubleValue("mesh-edge-max-ratio")*calc_avg_face_length();
 }
 // returns the closest distance to the liquid mesh
 // returns a positive number if inside the mesh
@@ -404,4 +452,65 @@ double LiquidMesh::signed_min_dist(Eigen::Vector2d x){
     } else{
         return -1*abs(min_d);
     }
+}
+
+bool LiquidMesh::loadMeshFromFile(LiquidMesh &m, std::string infileName){
+    // load liquid mesh file
+    std::ifstream infile(infileName);
+    if (!infile.is_open()) { 
+        std::cerr << "Unable to open liquid file "<<infileName<<"!" << std::endl; 
+        assert(!"Unable to open liquid mesh file!");
+    }
+
+    std::vector<Eigen::Vector2d> v;
+    std::vector<Eigen::Vector2i> f;
+    std::vector<Eigen::Vector2d> u;
+
+    std::string line;
+    while(!infile.eof()){
+        std::getline(infile, line);
+        std::stringstream ss(line);
+
+        std::string linetype;
+        ss >> linetype;
+        if (linetype == "#" || linetype == "//" || linetype == "" || ss.eof())    // skip comment lines and empty lines
+            continue;
+        
+        if (linetype.compare("v") == 0){
+            double a,b;
+            ss >> a;
+            ss >> b;
+            v.emplace_back(Eigen::Vector2d(a,b));
+        } else if (linetype.compare("f") == 0){
+            int a,b;
+            ss >> a;
+            ss >> b;
+            f.emplace_back(Eigen::Vector2i(a,b));
+        } else if (linetype.compare("u") == 0){
+            double a,b;
+            ss >> a;
+            ss >> b;
+            u.emplace_back(Eigen::Vector2d(a,b));
+        }
+        else {
+            std::cerr << "Invalid line in "<<infileName<<"! Skipping line..." << std::endl;
+        }
+    }
+    infile.close();
+    
+    assert(v.size() == f.size());
+
+    m.resize_mesh(v.size());
+
+    m.verts = v;
+    m.faces = f;
+    m.update_neighbor_face_vecs();
+
+    // inputting per-vertex velocity is optional
+    if (u.size() > 0){
+        assert(u.size() == v.size());
+        m.vels = u;
+    }
+
+    return true;
 }

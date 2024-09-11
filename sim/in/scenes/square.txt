@@ -1,0 +1,28 @@
+scene rectangle
+width 1
+height 1
+
+time-step 0.01
+simulation-time .02
+gravity 0
+
+sigma-la 0
+sigma-sl 1
+sigma-sa 1
+rho 1
+    
+mesh-size-n 32
+mesh-remesh-iters 6
+mesh-edge-max-ratio 1.3
+mesh-edge-min-ratio 0.7
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity rotational_cw
+
+show-marker-particles 1
+markers-left -1.0
+markers-right 1.0
+markers-bottom -1.0
+markers-top 1.0
+markers-spacing 0.1

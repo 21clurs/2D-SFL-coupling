@@ -125,12 +125,19 @@ namespace {
         }
     }
     void gen_square_donut(int n, const Eigen::Vector2d& center, double sideLength_inner, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        
         double ratio = sideLength_outer/sideLength_inner;
 
         int n_inner = n/(ratio+1);
         int n_outer = n-n_inner;
 
+        n_inner = n_inner + (n_inner%4);
+        n_outer = n_outer + (n_outer%4);
+        v.resize(n_inner + n_outer);
+        f.resize(n_inner + n_outer);
+
         assert(((void)"n_inner is a multiple of 4 when generating a square donut", n_inner%4==0));
+        assert(((void)"n_outer is a multiple of 4 when generating a square donut", n_outer%4==0));
         
         int nPerSide_inner = n_inner/4;
         float delta_inner = sideLength_inner/nPerSide_inner;
@@ -166,6 +173,79 @@ namespace {
         for(size_t i=0; i<n_inner; i++)
             f[n_outer + i] = Eigen::Vector2i(n_outer + (i+1)%n_inner, n_outer + i);
     }
+    void gen_generic_donut(int n, const Eigen::Vector2d& center, double r_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+        // assumes at least one rigid body that this donut spawns around
+        assert(SimOptions::intValue("num-rb") >= 1);
+        RigidBody *m = new RigidBody();
+        RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
+
+        int n_inner = m->verts.size();
+        int n_outer = n;
+        n_outer = n_outer + n_outer%4;
+
+        n = n_inner + n_outer;
+
+        // creates a rough square donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+        
+        // creates a rough circular donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+
+        for (size_t i=0; i<n_inner; i++){
+            v[i] = m->verts[i];
+            f[i] = Eigen::Vector2i(m->faces[i].y(),m->faces[i].x());
+        }
+
+        // then the circle
+        float theta = 2*M_PI/n_outer;
+        for (size_t i=0; i<n_outer; i++){
+            v[i+n_inner].x() = r_outer*cos(theta*i) + center.x();
+            v[i+n_inner].y() = r_outer*sin(theta*i) + center.y();
+
+            f[i+n_inner][0] = n_inner + i;
+            f[i+n_inner][1] = n_inner + (i+1)%n_outer;
+        }
+    }
+    void gen_generic_square_donut(int n, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+        // assumes at least one rigid body that this donut spawns around
+        assert(SimOptions::intValue("num-rb") >= 1);
+        RigidBody *m = new RigidBody();
+        RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
+
+        int n_inner = m->verts.size();
+        int n_outer = n;
+        n_outer = n_outer + n_outer%4;
+
+        n = n_inner + n_outer;
+
+        // creates a rough square donut around an arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+
+        for (size_t i=0; i<n_inner; i++){
+            v[i] = m->verts[i];
+            f[i] = Eigen::Vector2i(m->faces[i].y(),m->faces[i].x());
+        }
+
+        // then the square
+        int nPerSide = n_outer/4;
+        double delta = sideLength_outer/nPerSide;
+        // populate outer square
+        for(size_t i=0; i<nPerSide; i++){
+            // bottom
+            v[n_inner + i] = Eigen::Vector2d((-sideLength_outer/2) + i*delta, -sideLength_outer/2);
+            // right
+            v[n_inner + nPerSide+i] = Eigen::Vector2d(sideLength_outer/2, (-sideLength_outer/2) + i*delta);
+            // top
+            v[n_inner + 2*nPerSide+i] = Eigen::Vector2d((sideLength_outer/2)-i*delta, sideLength_outer/2);
+            // left
+            v[n_inner + 3*nPerSide+i] = Eigen::Vector2d(-sideLength_outer/2, (sideLength_outer/2)-i*delta);
+        }
+        for(size_t i=0; i<n_outer; i++)
+            f[n_inner + i] = Eigen::Vector2i(n_inner + i, n_inner + (i+1)%n_outer);
+    }
 }
 
 void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::string & initialvelocity){
@@ -175,35 +255,22 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
     setupSceneShape(sim->m, scenename);
     setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
 
-    // TODO: make this better
-    if (SimOptions::intValue("num-solids") == 1){
-        SolidMesh *m = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m, SimOptions::strValue("solid-file-1"));
-        sim->addSolid(m);
-    } else if (SimOptions::intValue("num-solids") == 2){
-        SolidMesh *m1 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m1, SimOptions::strValue("solid-file-1"));
-        sim->addSolid(m1);
-        SolidMesh *m2 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m2, SimOptions::strValue("solid-file-2"));
-        sim->addSolid(m2);
-    } else if (SimOptions::intValue("num-solids") == 3){
-        SolidMesh *m1 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m1, SimOptions::strValue("solid-file-1"));
-        sim->addSolid(m1);
-        SolidMesh *m2 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m2, SimOptions::strValue("solid-file-2"));
-        sim->addSolid(m2);
-        SolidMesh *m3 = new SolidMesh();
-        SolidMesh::loadMeshFromFile(*m3, SimOptions::strValue("solid-file-3"));
-        sim->addSolid(m3);
-    }
-    // TODO: make this better
-    if (SimOptions::intValue("num-rb") == 1){
+    setupSceneSolids(sim);
+}
+
+void Scenes::sceneFromFile(Sim * const &sim, const std::string & filename, const std::string & initialvelocity){
+    int N = sim->n;
+    sim->m.resize_mesh(N);
+
+    setupSceneShapeFromFile(sim->m, filename);
+    setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
+    setupSceneSolids(sim);
+}
+
+void Scenes::setupSceneSolids(Sim * const &sim){
+    for (int i=1; i<=SimOptions::intValue("num-rb"); i++){
         RigidBody *r = new RigidBody();
-        RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-1"));
-        r->updateRigidBodyVars();
-        r->updateVerts();
+        RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-"+std::to_string(i)));
         sim->addRigidBody(r);
     }
 }
@@ -213,14 +280,6 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
     std::vector<Eigen::Vector2d> v(N, Eigen::Vector2d(0,0));
     std::vector<Eigen::Vector2i> f(N, Eigen::Vector2i(0,0));
-    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
-
-    std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
-
-    std::vector<bool> air(N, true);
-    std::vector<bool> solid(N, false);
-    std::vector<bool> triple(N, false);
-    std::vector<bool> corner(N, false);
 
     if (scenename == "circle"){
 
@@ -279,16 +338,37 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         double d_outer = SimOptions::doubleValue("size-outer");
         double d_inner = SimOptions::doubleValue("size-inner");
 
-        std::cout<<d_outer<<","<<d_inner<<std::endl;
-
         gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
+
+    } else if (scenename == "generic_donut"){
+        double r_outer = SimOptions::doubleValue("radius-outer");
+
+        gen_generic_donut(N, Eigen::Vector2d(0.0,0.0), r_outer, v, f);
+
+    } else if (scenename == "generic_square_donut"){
+        double d_outer = SimOptions::doubleValue("size-outer");
+
+        gen_generic_square_donut(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
 
     } else {
         std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
         return;
     }
 
-    //sim->m.resize_mesh(v.size());
+    if (N != v.size()){
+        std::cout<<"Mesh was resized to have "<<v.size()<<" verts in order to better setup scene."<<std::endl;
+        N = v.size();
+        m.resize_mesh(N);
+    }
+
+    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
+
+    std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
+
+    std::vector<bool> air(N, true);
+    std::vector<bool> solid(N, false);
+    std::vector<bool> triple(N, false);
+    std::vector<bool> corner(N, false);
 
     for (size_t i = 0; i < v.size(); i++) 
         m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
@@ -303,6 +383,30 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
     m.set_boundaries(air, solid, triple, corner);
     
+}
+
+void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename){
+    LiquidMesh::loadMeshFromFile(m, filename);
+    
+    int N = m.verts.size();
+
+    m.reset_boundary_types();
+    m.vels = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
+    m.vels_solid = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
+    m.is_corner = std::vector<bool>(N, false);
+    m.reset_face_length_limits(); // this is fairly important to set!
+
+    // double checking
+    assert(N == m.verts.size());
+    assert(N == m.vels.size());
+    assert(N == m.faces.size());
+    assert(N == m.vertsPrevFace.size());
+    assert(N == m.vertsNextFace.size());
+    assert(N == m.vels_solid.size());
+    assert(N == m.is_air.size());
+    assert(N == m.is_solid.size());
+    assert(N == m.is_triple.size());
+    assert(N == m.is_corner.size());
 }
 
 void Scenes::setupSceneVelocities(std::vector<Eigen::Vector2d> & verts, std::vector<Eigen::Vector2d> & vels, const std::string & initialvelocity){
@@ -333,6 +437,18 @@ void Scenes::setupSceneVelocities(std::vector<Eigen::Vector2d> & verts, std::vec
         for (size_t i=0; i<N; i++){
             u[i].x() = 0;
             u[i].y() = verts[i].y();
+        }
+    } else if (initialvelocity == "rotational_cw"){
+        // (y,-x)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = verts[i].y();
+            u[i].y() = -verts[i].x();
+        }
+    } else if (initialvelocity == "rotational_ccw"){
+        // (-y,x)
+        for (size_t i=0; i<N; i++){
+            u[i].x() = -verts[i].y();
+            u[i].y() = verts[i].x();
         }
     } else if (initialvelocity == "harmonic_1"){
         // (y,x)
