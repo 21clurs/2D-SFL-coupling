@@ -48,13 +48,13 @@ void RigidBody::advectFE(double dt){
     setTranslation(translation + V_t*dt);
     setRotation(rotationTheta +  V_omega*dt);
     updateVerts();
-    calculateCOM();
+    //calculateCOM();
 }
 
 void RigidBody::advectFE(double curr_t, double dt){
     setTranslation(translation + vel_func(curr_t)*dt);
     updateVerts();
-    calculateCOM();
+    //calculateCOM();
 }
 
 void RigidBody::updateRigidBodyVars(){

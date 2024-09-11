@@ -3,7 +3,7 @@ size-outer 2.1
 
 time-step 0.005
 simulation-time 10
-output-frame-frequency 4
+output-frame-frequency 10
 gravity -1
 
 sigma-la 1

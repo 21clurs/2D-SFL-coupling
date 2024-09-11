@@ -34,8 +34,10 @@ class Sim
         void collide();
 
         void genMarkerParticles(double l, double r, double b, double t, double spacing);
+        void genBgField(double l, double r, double b, double t, double spacing);
         Eigen::Vector2d HHD_interior(Eigen::Vector2d x, double delta); 
         std::vector<Eigen::Vector2d> markerparticles; // TODO: INITIATE THESEEEEEE
+        std::vector<Eigen::Vector2d> bgField; // TODO: INITIATE THESEEEEEE
 
         static bool setAndLoadSimOptions(std::string infileName);
         void run();

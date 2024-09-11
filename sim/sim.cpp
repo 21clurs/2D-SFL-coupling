@@ -42,6 +42,7 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     SimOptions::addDoubleOption ("markers-bottom", -1);
     SimOptions::addDoubleOption ("markers-top", 1);
     SimOptions::addDoubleOption ("markers-spacing", 0.1);
+    SimOptions::addBooleanOption ("show-background-field", false);
 
     // scene/original liquid mesh shape specific parameters
     SimOptions::addDoubleOption ("radius", 1);  // circle, semicircle
@@ -94,6 +95,17 @@ void Sim::run(){
         );
         std::cout<<"Finished generating marker particles."<<std::endl;
     }
+    if (SimOptions::boolValue("show-background-field")){
+        std::cout<<"Generating background field..."<<std::endl;
+        genBgField(
+            SimOptions::doubleValue("markers-left"),
+            SimOptions::doubleValue("markers-right"),
+            SimOptions::doubleValue("markers-bottom"),
+            SimOptions::doubleValue("markers-top"),
+            SimOptions::doubleValue("markers-spacing")
+        );
+        std::cout<<"Finished generating background field."<<std::endl;
+    }
 
     /*for(int k=0; k<rigidBodies_scripted.size(); k++){
         for(int i=0; i<rigidBodies_scripted[k]->verts.size(); i++){
@@ -117,6 +129,7 @@ void Sim::run(){
         }
         try {
             step_sim(i*dt);
+            //outputFrame(std::to_string(frame_num)+".txt");
         } catch (...) {
             std::cout<<frame_num<<" frames generated."<<std::endl; 
         }
@@ -152,6 +165,7 @@ Sim::Sim(){
     outframe_frequency = SimOptions::intValue("output-frame-frequency");
     
     markerparticles = {};
+    bgField = {};
 }
 
 Sim::Sim(LiquidMesh& m, int n, float dt):
@@ -165,6 +179,7 @@ Sim::Sim(LiquidMesh& m, int n, float dt):
     gravity(Eigen::Vector2d({0.0, 0.0}))
 {
     markerparticles = {};
+    bgField = {};
 }
 
 Sim::~Sim(){
@@ -255,22 +270,28 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
         count += rigidBodies_unscripted[i]->verts.size();
 
         file<<"rb "<<rigidBodies_unscripted[i]->com.x()+rigidBodies_unscripted[i]->translation.x()<<" "<<rigidBodies_unscripted[i]->com.y()+rigidBodies_unscripted[i]->translation.y()<<" "<<rigidBodies_unscripted[i]->rotationTheta<<std::endl;
+        file<<"rbv "<<rigidBodies_unscripted[i]->V_t.x()<<" "<<rigidBodies_unscripted[i]->V_t.y()<<" "<<rigidBodies_unscripted[i]->V_omega<<std::endl;
     }
     file<<std::endl;
-
+    
     // marker particles
     for (size_t i=0; i<markerparticles.size(); i++){
         file<<"p "<<markerparticles[i][0]<<" "<<markerparticles[i][1]<<std::endl;
     }
     file<<std::endl;
-
+    /*
     // marker particle velocities
     for (size_t i=0; i<markerparticles.size(); i++){
         Eigen::Vector2d tmp = HHD_interior(markerparticles[i], 0.01);
         file<<"pv "<<tmp[0]<<" "<<tmp[1]<<std::endl;
     }
     file.close();
-    
+    */
+    // bg field visualization
+    for (size_t i=0; i<bgField.size(); i++){
+        Eigen::Vector2d tmp = HHD_interior(bgField[i], 0.01);
+        file<<"bg "<<bgField[i].x()<<" "<<bgField[i].y()<<" "<<tmp[0]<<" "<<tmp[1]<<std::endl;
+    }
 
     return true;
 }
@@ -626,8 +647,8 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
 
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
             //BC_dpdn[i] = n_solid_outward.dot(m.vels[i] + gravity*dt - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
-            BC_dpdn[i] = n_solid_outward.dot(m.vels[i] - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
-            //BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
+            //BC_dpdn[i] = n_solid_outward.dot(m.vels[i] - m.vels_solid[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
+            BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
         }
     }
 
@@ -797,14 +818,14 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             // populate matrix to contain relevant \sum(G*J^T) information
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
-                //if((m.is_solid[j] || m.is_triple[j]) && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
-                if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
+                if((m.is_solid[j] || m.is_triple[j]) && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
+                //if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_scripted[k]->rb_sim_id)){
                     Eigen::Vector2d n_j;
                     if (m.is_solid[j])
                         n_j = m.calc_vertex_normal(j);
                     else
                         n_j = m.calc_vertex_solid_normal(j);
-                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_scripted[k]->com, n_j));
+                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-(rigidBodies_scripted[k]->com+rigidBodies_scripted[k]->translation), n_j));
 
                     row += collocB_solid(i,j)*J_j;
 
@@ -822,14 +843,14 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             // populate A_topright block
             Eigen::Vector3d row = Eigen::Vector3d::Zero();
             for (size_t j=0; j<N; j++){
-                //if((m.is_solid[j] || m.is_triple[j]) && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
-                if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
+                if((m.is_solid[j] || m.is_triple[j]) && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
+                //if(m.is_solid[j] && (m.per_vertex_rb_contact[j] == rigidBodies_unscripted[k]->rb_sim_id)){
                     Eigen::Vector2d n_j;
                     if (m.is_solid[j])
                         n_j = m.calc_vertex_normal(j);
                     else
                         n_j = m.calc_vertex_solid_normal(j);   
-                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-rigidBodies_unscripted[k]->com, n_j));
+                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_j));
 
                     row += collocB_solid(i,j)*J_j;
                 }
@@ -839,24 +860,22 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             // populate A_bottomleft block            
             if (m.is_solid[i] && (m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id)){
                 Eigen::Vector2d n_i = m.calc_vertex_normal(i); // this one should point into the solid ? so outward normal relative to liquid mesh is probably good
-                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies_unscripted[k]->com, n_i));
+                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
                 A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i);         // remember, this is an integral so maybe multiply by area is important ?
-            } else if (m.is_air[i]) {
-                //rhs_tail_pressure.segment(3*k,3) += - J * m.vert_area(i) * BC_p[i];
             }
-
+            
             // add in contributions relevant to triple points
-            /*if(m.is_triple[i] && m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id){
+            if(m.is_triple[i] && m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id){
                 //A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i);
                 Eigen::Vector2d n_i = m.calc_vertex_solid_normal(i);
-                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-rigidBodies_unscripted[k]->com, n_i));
-                rhs_tail.segment(3*k,3) -= J * m.vert_area(i) * BC_p[i];
-            }*/
+                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
+                rhs_tail_pressure.segment(3*k,3) -= J * m.vert_area(i) * BC_p[i];
+            }
 
         }
         Eigen::Matrix3d M = Eigen::Matrix3d::Zero();
         M.diagonal() = Eigen::Vector3d(rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->moi);
-        A_bottomright.block(k*3,k*3,3,3) =  (-1.0) * M; // took out 1/dt term
+        A_bottomright.block(k*3,k*3,3,3) = (-1.0) * M; // took out 1/dt term
 
         rhs_tail_momentum.segment(3*k,3) += (-1.0) * M * (rigidBodies_unscripted[k]->retrieveRigidBodyV()); // took out 1/dt term
     }
@@ -873,10 +892,10 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     A_rb.block(0,0,N,N) = A;
     // copy rhs into the top of rhs_rb
     rhs_rb.head(N) = rhs;
-    rhs_rb.head(N) = rhs_rb.head(N) - rhs_head;
+    //rhs_rb.head(N) = rhs_rb.head(N) - rhs_head;
 
     for (size_t k=0; k<rigidBodies_scripted.size(); k++){
-        //rhs_rb.head(N) = rhs_rb.head(N) - rhs_scripted_contribution.block(0,k*3,N,3)*(rigidBodies_scripted[k]->retrieveRigidBodyV());
+        rhs_rb.head(N) = rhs_rb.head(N) - rhs_scripted_contribution.block(0,k*3,N,3)*(rigidBodies_scripted[k]->retrieveRigidBodyV());
     }
     for (size_t k=0; k<rigidBodies_unscripted.size(); k++){
         A_rb.block(0,N+k*3,N,3) = A_topright.block(0,k*3,N,3);
@@ -1008,10 +1027,23 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 }
 
 void Sim::step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies){
+    //float eps = 0.00001;
     for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
-        rigidBodies_unscripted[i]->setRigidBodyV(V_rigidBodies[i]);
-        /*std::cout<<"Rigid body V: "<<V_rigidBodies[i]<<std::endl;
-        std::cout<<"n: "<<m.verts.size()<<std::endl;*/
+        /*if ( abs(V_rigidBodies[i].x()) < eps) {
+            V_rigidBodies[i].x() = 0; 
+        }
+        if ( abs(V_rigidBodies[i].y()) < eps) {
+            V_rigidBodies[i].y() = 0; 
+        }
+        if ( abs(V_rigidBodies[i].z()) < eps) {
+            //V_rigidBodies[i].z() = 0; 
+        }*/
+        //rigidBodies_unscripted[i]->setRigidBodyV(V_rigidBodies[i]);
+        rigidBodies_unscripted[i]->setRigidBodyV_t(Eigen::Vector2d(V_rigidBodies[i].x(), V_rigidBodies[i].y()));
+        rigidBodies_unscripted[i]->setRigidBodyV_omega(V_rigidBodies[i].z());
+        rigidBodies_unscripted[i]->updatePerVertexVels();
+        //std::cout<<V_rigidBodies[i]<<std::endl;
+        //std::cout<<"n: "<<m.verts.size()<<std::endl;
     }
 }
 
@@ -1107,5 +1139,26 @@ void Sim::genMarkerParticles(double l, double r, double b, double t, double spac
     markerparticles.resize(tmpMarkers.size());
     for(size_t i = 0; i<tmpMarkers.size(); i++){
         markerparticles[i] = tmpMarkers[i];
+    }
+}
+void Sim::genBgField(double l, double r, double b, double t, double spacing){
+    double min_dist_to_liquid_allowed = 0.05;
+
+    std::vector<Eigen::Vector2d> tmp;
+    tmp.reserve(int(((r-l)/spacing)*((t-b)/spacing)));
+
+    for (double x=l; x<=r; x+=spacing){
+        for (double y=b; y<=t; y+=spacing){
+            Eigen::Vector2d marker(x,y);
+            double dist_to_liquid = m.signed_min_dist(marker);
+            if ( dist_to_liquid>min_dist_to_liquid_allowed){
+                tmp.push_back(marker);
+            }
+        }
+    }
+
+    bgField.resize(tmp.size());
+    for(size_t i = 0; i<tmp.size(); i++){
+        bgField[i] = tmp[i];
     }
 }

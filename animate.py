@@ -31,6 +31,8 @@ for frame in range(start, end):
     rbTheta = []
     dt = 0
     outFreq = 1
+    bgFieldPos = []
+    bgFieldVel = []
 
     if os.path.isfile(outdir+str(frame)+".txt"):
         with open(outdir+str(frame)+".txt","r") as curr_frame_file:
@@ -74,7 +76,9 @@ for frame in range(start, end):
                 elif r[0] == 'rb':
                     rbCOM.append([ float(r[1]), float(r[2]) ])
                     rbTheta.append(float(r[3]))
-
+                elif r[0] == 'bg':
+                    bgFieldPos.append([ float(r[1]), float(r[2]) ])
+                    bgFieldVel.append([ float(r[3]), float(r[4]) ])
 
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
@@ -130,6 +134,9 @@ for frame in range(start, end):
                     plt.arrow(v[i,0], v[i,1], u[i,0]*0.5, u[i,1]*0.5, head_width=.05)
             if "-shownumpoints" in sys.argv:
                 plt.text(1.4, -1.9, "n: {}".format(len(vLiquidList)), fontsize = 11)
+            if "-showfield" in sys.argv:
+                for i in range(len(bgFieldPos)):
+                    plt.arrow(bgFieldPos[i][0], bgFieldPos[i][1], bgFieldVel[i][0]*.5, bgFieldVel[i][1]*.5, head_width=.02, color="b")
             
         
         plt.text(-1.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
