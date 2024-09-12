@@ -30,7 +30,7 @@ int main(int argc, char **argv){
 
   // testing in main again
   std::vector<Eigen::Vector2d> verts = {
-
+    
   };
   std::vector<Eigen::Vector2i> faces = {
 

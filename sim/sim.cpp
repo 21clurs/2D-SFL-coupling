@@ -111,7 +111,6 @@ void Sim::run(){
         }
         try {
             step_sim(i*dt);
-            //outputFrame(std::to_string(frame_num)+".txt");
         } catch (...) {
             std::cout<<frame_num<<" frames generated."<<std::endl; 
         }
@@ -583,7 +582,7 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             double pressure_jump_normal_to_triple_junction = st_force_combined.dot(-t_solid_outward) / triple_junction_virtual_width;
 
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
-            BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: technically, this is dpdn_s only, not dpdn
+            BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: this is dpdn_s only, not the full dpdn
         }
     }
 
@@ -740,11 +739,12 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 
     // constructing the different block parts of the modified A, rhs to deal with two-way coupling
     Eigen::MatrixXd rhs_scripted_contribution = Eigen::MatrixXd::Zero(N, 3*rigidBodies_scripted.size());
-    // alternative appraoch?
-    // Eigen::VectorXd rhs_head = Eigen::VectorXd::Zero(N);
+    Eigen::VectorXd rhs_head = Eigen::VectorXd::Zero(N);
+
     Eigen::MatrixXd A_topright = Eigen::MatrixXd::Zero(N, 3*rigidBodies_unscripted.size());
     Eigen::MatrixXd A_bottomleft = Eigen::MatrixXd::Zero(3*rigidBodies_unscripted.size(), N);
     Eigen::MatrixXd A_bottomright = Eigen::MatrixXd::Zero(3*rigidBodies_unscripted.size(), 3*rigidBodies_unscripted.size());
+
     Eigen::VectorXd rhs_tail_momentum = Eigen::VectorXd::Zero(3*rigidBodies_unscripted.size());
     Eigen::VectorXd rhs_tail_pressure = Eigen::VectorXd::Zero(3*rigidBodies_unscripted.size());
 
@@ -760,15 +760,14 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                         n_j = m.calc_vertex_normal(j);
                     else
                         n_j = m.calc_vertex_solid_normal(j);
-                    Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-(rigidBodies_scripted[k]->com+rigidBodies_scripted[k]->translation), n_j));
-
-                    row += collocB_solid(i,j)*J_j;
+                    /*Eigen::Vector3d J_j = Eigen::Vector3d(n_j.x(), n_j.y(), cross2d(m.verts[j]-(rigidBodies_scripted[k]->com+rigidBodies_scripted[k]->translation), n_j));
+                    row += collocB_solid(i,j)*J_j;*/
 
                     // alternative appraoch?
-                    // rhs_head[i] = rhs_head[i] + collocB_solid(i,j)*rho*(n_j.dot(m.vels_solid[j]));
+                    rhs_head[i] = rhs_head[i] + collocB_solid(i,j)*rho*(n_j.dot(m.vels_solid[j]));
                 }
             }
-            rhs_scripted_contribution.block(i,k*3,1,3) = rho * row.transpose();
+            // rhs_scripted_contribution.block(i,k*3,1,3) = rho * row.transpose();
         }
     }
 
@@ -798,17 +797,17 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                 A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i); // remember, this is an integral, multiply by area is important
             }
 
-            // add in contributions relevant to triple points
+            // add in contributions relevant to triple points on the RHS
             if(m.is_triple[i] && m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id){
-                //A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i);
                 Eigen::Vector2d n_i = m.calc_vertex_solid_normal(i);
                 Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
-                rhs_tail_pressure.segment(3*k,3) -= J * m.vert_area(i) * BC_p[i];
+                rhs_tail_pressure.segment(3*k,3) -= J * m.vert_solid_area(i) * BC_p[i];
             }
 
         }
         Eigen::Matrix3d M = Eigen::Matrix3d::Zero();
-        M.diagonal() = Eigen::Vector3d(rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->moi);
+        M.diagonal() = rho * Eigen::Vector3d(rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->mass, rigidBodies_unscripted[k]->moi);
+        
         A_bottomright.block(k*3,k*3,3,3) = (-1.0) * M; // no need for 1/dt term
 
         rhs_tail_momentum.segment(3*k,3) += (-1.0) * M * (rigidBodies_unscripted[k]->retrieveRigidBodyV()); // no need for 1/dt term
@@ -826,11 +825,11 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     A_rb.block(0,0,N,N) = A;
     // copy rhs into the top of rhs_rb
     rhs_rb.head(N) = rhs;
-    // rhs_rb.head(N) = rhs_rb.head(N) - rhs_head;
+    rhs_rb.head(N) = rhs_rb.head(N) - rhs_head;
 
-    for (size_t k=0; k<rigidBodies_scripted.size(); k++){
+    /*for (size_t k=0; k<rigidBodies_scripted.size(); k++){
         rhs_rb.head(N) = rhs_rb.head(N) - rhs_scripted_contribution.block(0,k*3,N,3)*(rigidBodies_scripted[k]->retrieveRigidBodyV());
-    }
+    }*/
     for (size_t k=0; k<rigidBodies_unscripted.size(); k++){
         A_rb.block(0,N+k*3,N,3) = A_topright.block(0,k*3,N,3);
         A_rb.block(N+k*3,0,3,N) = A_bottomleft.block(k*3,0,3,N);

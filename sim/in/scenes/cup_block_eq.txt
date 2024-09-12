@@ -2,8 +2,8 @@ scene generic_square_donut
 size-outer 2.1
 
 time-step 0.005
-simulation-time 20
-output-frame-frequency 10
+simulation-time 40
+output-frame-frequency 20
 gravity -1
 
 sigma-la 1

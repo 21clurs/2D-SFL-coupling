@@ -387,6 +387,20 @@ const Eigen::Vector2d LiquidMesh::calc_vertex_solid_normal(const int vertIndex){
     return n_solid;
 }
 
+double LiquidMesh::vert_solid_area(const int vertIndex){
+    Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
+    // figure out which face is the solid face
+    // return half of area of that face
+    // this is NOT super robust. I think I miss a LOT of edge cases here, especially to do with the triple points
+    double area_solid;
+    if (is_air[other_vert_from_face(adjacent_face_inds[0], vertIndex)]){
+        area_solid = 0.5 * face_length(adjacent_face_inds[1]);
+    } else {
+        area_solid = 0.5 * face_length(adjacent_face_inds[0]);
+    }
+    return area_solid;
+}
+
 void LiquidMesh::update_triple_points(){
     for(size_t i=0; i<verts.size(); i++){
         if (is_solid[i] && (is_air[next_neighbor_index(i)] || is_air[prev_neighbor_index(i)])){

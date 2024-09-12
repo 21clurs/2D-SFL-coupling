@@ -26,6 +26,7 @@ class LiquidMesh : public Mesh
 
         std::vector<bool> get_solid_faces();
         const Eigen::Vector2d calc_vertex_solid_normal(const int vertIndex);
+        double vert_solid_area(const int vertIndex);
 
         void remesh();
 
