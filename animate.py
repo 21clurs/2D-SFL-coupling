@@ -42,7 +42,8 @@ for frame in range(start, end):
                     vList.append([ float(r[1]), float(r[2])])
                     if len(r)>3:
                         if "c" in r[3]:
-                            vColorList.append('g')
+                            # vColorList.append('g')
+                            vColorList.append('#ff0070')
                             vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "a" in r[3]:
                             vColorList.append('#3ec1d5')

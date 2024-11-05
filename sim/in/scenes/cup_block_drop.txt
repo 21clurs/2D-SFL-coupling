@@ -7,9 +7,9 @@ simulation-time 40
 output-frame-frequency 20
 gravity -1
 
-sigma-la 1
-sigma-sl 1
-sigma-sa 1
+sigma-la 0
+sigma-sl 0
+sigma-sa 0
 rho 1
     
 mesh-size-n 90

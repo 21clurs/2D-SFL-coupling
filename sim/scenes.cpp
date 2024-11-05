@@ -17,6 +17,20 @@ namespace {
             f[i][1] = (i+1)%n;
         }
     }
+     void gen_ellipse_invert(int n, const Eigen::Vector2d& center, double a, double b, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
+        float theta = 2*M_PI/n;
+
+        v.resize(n);
+        f.resize(n);
+
+        for (size_t i=0; i<n; i++){
+            v[i].x() = a*cos(theta*i) + center.x();
+            v[i].y() = b*sin(theta*i) + center.y();
+
+            f[i][1] = i;
+            f[i][0] = (i+1)%n;
+        }
+    }
     void gen_rectangle(int n, const Eigen::Vector2d& center, double w, double h, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f ){
         assert(((void)"n is a multiple of 2 when generating a rectangle", n%2==0));
         
@@ -246,6 +260,54 @@ namespace {
         for(size_t i=0; i<n_outer; i++)
             f[n_inner + i] = Eigen::Vector2i(n_inner + i, n_inner + (i+1)%n_outer);
     }
+    void gen_generic_swiss_cheese(int n, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+        // assumes at least one rigid body that this cheese spawns around
+        assert(SimOptions::intValue("num-rb") >= 1);
+
+        int n_inner = 0;
+        std::vector<RigidBody *> rigid_bodies;
+        for(size_t i=1; i<SimOptions::intValue("num-rb"); i++){
+            RigidBody *m = new RigidBody();
+            RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-"+std::to_string(i)));
+            n_inner += m->verts.size();
+            rigid_bodies.push_back(m);
+        }
+
+        int n_outer = n;
+        n_outer = n_outer + n_outer%4;
+
+        n = n_inner + n_outer;
+
+        // creates a rough square donut around arbitrary rigid body shape in the middle
+        v.resize(n);
+        f.resize(n);
+
+        int ctr = 0;
+        for(size_t i=0; i<rigid_bodies.size(); i++){
+            for(size_t j=0; j<rigid_bodies[i]->verts.size(); j++){
+                v[ctr+j] = rigid_bodies[i]->verts[j];
+                f[ctr+j] = Eigen::Vector2i(ctr + rigid_bodies[i]->faces[j].y(), ctr + rigid_bodies[i]->faces[j].x());
+            }
+            ctr+=rigid_bodies[i]->verts.size();
+        }
+
+        // then the square
+        int nPerSide = n_outer/4;
+        double delta = sideLength_outer/nPerSide;
+        // populate outer square
+        for(size_t i=0; i<nPerSide; i++){
+            // bottom
+            v[n_inner + i] = Eigen::Vector2d((-sideLength_outer/2) + i*delta, -sideLength_outer/2);
+            // right
+            v[n_inner + nPerSide+i] = Eigen::Vector2d(sideLength_outer/2, (-sideLength_outer/2) + i*delta);
+            // top
+            v[n_inner + 2*nPerSide+i] = Eigen::Vector2d((sideLength_outer/2)-i*delta, sideLength_outer/2);
+            // left
+            v[n_inner + 3*nPerSide+i] = Eigen::Vector2d(-sideLength_outer/2, (sideLength_outer/2)-i*delta);
+        }
+        for(size_t i=0; i<n_outer; i++)
+            f[n_inner + i] = Eigen::Vector2i(n_inner + i, n_inner + (i+1)%n_outer);
+    }
 }
 
 void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::string & initialvelocity){
@@ -349,6 +411,16 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         double d_outer = SimOptions::doubleValue("size-outer");
 
         gen_generic_square_donut(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
+
+    } else if (scenename == "generic_swiss_cheese"){
+        double d_outer = SimOptions::doubleValue("size-outer");
+
+        gen_generic_swiss_cheese(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
+
+    }else if (scenename == "circle_inverted"){
+        double r = SimOptions::doubleValue("radius");
+
+        gen_ellipse_invert(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
 
     } else {
         std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;

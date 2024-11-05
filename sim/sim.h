@@ -19,6 +19,8 @@ class Sim
 
         void addRigidBody(RigidBody* rigidBody);
 
+        bool outputOscillationX(std::vector<float> oscillation_t, std::vector<float> oscillation_x, std::string filename, std::string filelocation="./out/oscillation_tests/");
+        bool outputPostStepV(std::string filename, std::string filelocation="./out/buoyancy_tests/");
         bool outputFrame(std::string filename, std::string filelocation="./out/");
 
         void step_sim(double curr_t);

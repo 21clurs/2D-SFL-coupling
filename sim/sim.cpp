@@ -17,6 +17,8 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     SimOptions::addStringOption ("scene", "circle");
     SimOptions::addStringOption ("scene-file", "");
 
+    SimOptions::addStringOption ("test", "none");
+
     SimOptions::addDoubleOption ("time-step", 0.01);
     SimOptions::addDoubleOption ("simulation-time", 10.0);
     SimOptions::addIntegerOption ("output-frame-frequency", 1);
@@ -103,9 +105,33 @@ void Sim::run(){
     double dt = SimOptions::doubleValue("time-step");
     int steps = (int) (SimOptions::doubleValue("simulation-time")/dt);
     int frame_num = 0;
+
+    // testing stuff...
+    bool oscillation_test = false;
+    std::vector<float> oscillation_t;
+    std::vector<float> oscillation_x;
+    int oscillation_tracking_ind = 0;
+    bool buoyancy_test = false;
+    if( SimOptions::strValue("test").compare("oscillation") == 0){
+        oscillation_test = true;
+        oscillation_t.resize(steps);
+        oscillation_x.resize(steps);
+        oscillation_tracking_ind = 0;
+        std::cout<<"Testing oscillation!"<<std::endl;
+    } else if( SimOptions::strValue("test").compare("buoyancy") == 0){
+        assert(rigidBodies_unscripted.size()==1);
+        buoyancy_test = true;
+        std::cout<<"Testing buoyancy!"<<std::endl;
+    }
+
     for (int i=0; i<steps; i++){
+        // testing stuff
+        if (oscillation_test == true){
+            oscillation_t[i] = i*dt;
+            oscillation_x[i] = m.verts[oscillation_tracking_ind].norm();
+        }
         // sim stuff
-        if (i%outframe_frequency == 0){
+        if (oscillation_test == false && i%outframe_frequency == 0){
             outputFrame(std::to_string(frame_num)+".txt");
             frame_num++;
         }
@@ -114,12 +140,22 @@ void Sim::run(){
         } catch (...) {
             std::cout<<frame_num<<" frames generated."<<std::endl; 
         }
+        // testing buoyancy: we output the rigid body velocity 
+        if(i==0 && buoyancy_test == true){
+            outputPostStepV(std::to_string(m.verts.size())+".txt");
+        }
+
         // progress messages
         std::cout<<"Simulation steps "<<i+1<<"/"<<steps<<" complete."<<"\r";
         std::cout.flush();
     }
-
     std::cout << std::endl;
+
+    if (oscillation_test == true){
+        std::cout<<"Outputting oscillation test info..."<<std::endl;
+        outputOscillationX(oscillation_t,oscillation_x,std::to_string(m.verts.size())+".txt");
+    }
+
     std::cout<<frame_num<<" frames successfully generated!"<<std::endl; 
 }
 
@@ -169,6 +205,24 @@ void Sim::addRigidBody(RigidBody* rigidBody){
     } else{
         rigidBodies_unscripted.emplace_back(rigidBody);
     }
+}
+
+bool Sim::outputOscillationX(std::vector<float> oscillation_t, std::vector<float> oscillation_x, std::string filename, std::string filelocation){
+    std::ofstream file(filelocation+filename);
+    for (size_t i=0; i<oscillation_x.size(); i++){
+        file<<oscillation_t[i]<<" "<<oscillation_x[i]<<std::endl;
+    }
+    file.close();
+
+    return true;
+}
+
+bool Sim::outputPostStepV(std::string filename, std::string filelocation){
+    std::ofstream file(filelocation+filename);
+    file<<rigidBodies_unscripted[0]->V_t.x()<<" "<<rigidBodies_unscripted[0]->V_t.x()<<std::endl;
+    file.close();
+
+    return true;
 }
 
 bool Sim::outputFrame(std::string filename, std::string filelocation){
@@ -795,6 +849,22 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                 Eigen::Vector2d n_i = m.calc_vertex_normal(i); // normal should point into the solid
                 Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
                 A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i); // remember, this is an integral, multiply by area is important
+                /*Eigen::Vector2d n_0 = m.calc_face_normal(m.faces_from_vert(i)[0]);
+                float d_0 = m.face_length(m.faces_from_vert(i)[0]);
+                Eigen::Vector2d n_1 = m.calc_face_normal(m.faces_from_vert(i)[1]);
+                float d_1 = m.face_length(m.faces_from_vert(i)[1]);
+                Eigen::Vector2d n_i = (n_0*d_0 + n_1*d_1)/(d_0+d_1);
+                n_i.normalize();
+                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
+                A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i); // remember, this is an integral, multiply by area is important*/
+                
+                /*Eigen::Vector2d n_0 = m.calc_face_normal(m.faces_from_vert(i)[0]);
+                float d_0 = m.face_length(m.faces_from_vert(i)[0]);
+                Eigen::Vector2d n_1 = m.calc_face_normal(m.faces_from_vert(i)[1]);
+                float d_1 = m.face_length(m.faces_from_vert(i)[1]);
+                Eigen::Vector2d n_i = 0.5 * (d_0 * n_0 + d_1 * n_1);
+                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
+                A_bottomleft.block(k*3,i,3,1) = J;*/
             }
 
             // add in contributions relevant to triple points on the RHS
