@@ -11,7 +11,7 @@ sigma-sl 1
 sigma-sa 1
 rho 1
     
-mesh-size-n 120
+mesh-size-n 160
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.3
 mesh-edge-min-ratio 0.7
@@ -28,8 +28,8 @@ markers-top 1.5
 markers-spacing 0.1
 
 num-rb 2
-# rigid-body-file-1 ./in/solids/circle_rb_3.txt
-rigid-body-file-1 ./in/solids/square_rb.txt
+rigid-body-file-1 ./in/solids/circle_rb_3.txt
+# rigid-body-file-1 ./in/solids/square_rb.txt
 # rigid-body-file-2 ./in/solids/cup_box.txt
 # rigid-body-file-1 ./in/solids/Lshape_rb.txt
 rigid-body-file-2 ./in/solids/cup_bigger.txt

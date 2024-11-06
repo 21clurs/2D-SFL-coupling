@@ -143,6 +143,7 @@ void Sim::run(){
         // testing buoyancy: we output the rigid body velocity 
         if(i==0 && buoyancy_test == true){
             outputPostStepV(std::to_string(m.verts.size())+".txt");
+            //std::cout<<rigidBodies_unscripted[0]->V_t.y()<<std::endl;
         }
 
         // progress messages
@@ -219,7 +220,7 @@ bool Sim::outputOscillationX(std::vector<float> oscillation_t, std::vector<float
 
 bool Sim::outputPostStepV(std::string filename, std::string filelocation){
     std::ofstream file(filelocation+filename);
-    file<<rigidBodies_unscripted[0]->V_t.x()<<" "<<rigidBodies_unscripted[0]->V_t.x()<<std::endl;
+    file<<rigidBodies_unscripted[0]->V_t.x()<<" "<<rigidBodies_unscripted[0]->V_t.y()<<std::endl;
     file.close();
 
     return true;
@@ -1030,8 +1031,13 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
 
 void Sim::step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies){
     for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
-        rigidBodies_unscripted[i]->setRigidBodyV_t(Eigen::Vector2d(V_rigidBodies[i].x(), V_rigidBodies[i].y()));
-        rigidBodies_unscripted[i]->setRigidBodyV_omega(V_rigidBodies[i].z());
+        //rigidBodies_unscripted[i]->setRigidBodyV_t(Eigen::Vector2d(V_rigidBodies[i].x(), V_rigidBodies[i].y()));
+        if(rigidBodies_unscripted[i]->clamp_translation_x == false)
+            rigidBodies_unscripted[i]->setRigidBodyV_t_x(V_rigidBodies[i].x());
+        if(rigidBodies_unscripted[i]->clamp_translation_y == false)
+            rigidBodies_unscripted[i]->setRigidBodyV_t_y(V_rigidBodies[i].y());
+        if(rigidBodies_unscripted[i]->clamp_rotation == false)
+            rigidBodies_unscripted[i]->setRigidBodyV_omega(V_rigidBodies[i].z());
         rigidBodies_unscripted[i]->updatePerVertexVels();
     }
 }

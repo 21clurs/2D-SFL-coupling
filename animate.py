@@ -43,16 +43,19 @@ for frame in range(start, end):
                     if len(r)>3:
                         if "c" in r[3]:
                             # vColorList.append('g')
-                            vColorList.append('#ff0070')
+                            vColorList.append('#219ebc')
                             vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "a" in r[3]:
-                            vColorList.append('#3ec1d5')
+                            #vColorList.append('#3ec1d5')
+                            vColorList.append('#fca311')
                             vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "s" in r[3]:
-                            vColorList.append('#ff0070')
+                            #vColorList.append('#ff0070')
+                            vColorList.append('#219ebc')
                             vLiquidList.append([ float(r[1]), float(r[2])])
                         elif "t" in r[3]:
-                            vColorList.append('#1b3481')
+                            #vColorList.append('#1b3481')
+                            vColorList.append('#0f4c5c')
                             vLiquidList.append([ float(r[1]), float(r[2])])
                         else:
                             vColorList.append('k')
@@ -96,20 +99,28 @@ for frame in range(start, end):
             xPts = np.array([v[indexStart,0], v[indexEnd,0]])
             yPts = np.array([v[indexStart,1], v[indexEnd,1]])
             faceColor = "#005668"
+            faceColor = "C0"
             if(vColorList[indexStart] == 'k' or vColorList[indexEnd] == 'k' ):
                 faceColor = "#50a0c8"
-            plt.plot(xPts, yPts, faceColor)
+                faceColor = "#bababa"
+                plt.plot(xPts, yPts, faceColor,zorder=1)
+            else:                
+                plt.plot(xPts, yPts, faceColor,zorder=2)
         for i in range(len(rbCOM)):
             rMatrix = np.array([ [np.cos(rbTheta[i]), -np.sin(rbTheta[i])] , [np.sin(rbTheta[i]), np.cos(rbTheta[i])] ])
             north = 0.1 *  np.dot(rMatrix, np.array([0.0, 1.0]))
-            plt.arrow(rbCOM[i][0], rbCOM[i][1], north[0], north[1], head_width=.05)
+            plt.arrow(rbCOM[i][0], rbCOM[i][1], north[0], north[1], head_width=.05, color='k')
             east = 0.1 * np.dot(rMatrix, np.array([1.0, 0.0]))
-            plt.arrow(rbCOM[i][0], rbCOM[i][1], east[0], east[1], head_width=.05)
+            plt.arrow(rbCOM[i][0], rbCOM[i][1], east[0], east[1], head_width=.05, color='k')
 
         # set axes
         ax = plt.gca()
-        ax.set_xlim([-3, 3])
-        ax.set_ylim([-2, 2])
+        # for wide cup
+        #ax.set_xlim([-3, 3])
+        #ax.set_ylim([-1.3, 2.0])
+        # for big_up cup
+        ax.set_xlim([-3,3.2])
+        ax.set_ylim([-1.5, 2.5])
         ax.set_aspect('equal')
 
         if len(sys.argv)>1:
@@ -122,7 +133,8 @@ for frame in range(start, end):
                 for j in range(len(mp)):
                     particle = mp[j]
                     #vel = mpv[j]
-                    plt.plot(particle[0], particle[1], marker=".", markersize=1,color='r')
+                    plt.plot(particle[0], particle[1], marker=".", markersize=1,color='#0a9396')
+                    #plt.plot(particle[0], particle[1], marker=".", markersize=15,color='paleturquoise', zorder=0)
                     #plt.arrow(particle[0], particle[1], vel[0]*0.5, vel[1]*0.5, head_width=.05)
             if "-shownorms" in sys.argv:
                 for i in range(len(vn)):
@@ -138,13 +150,27 @@ for frame in range(start, end):
             if "-showfield" in sys.argv:
                 for i in range(len(bgFieldPos)):
                     plt.arrow(bgFieldPos[i][0], bgFieldPos[i][1], bgFieldVel[i][0]*.5, bgFieldVel[i][1]*.5, head_width=.02, color="b")
-            
         
-        plt.text(-1.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
-        plt.text(-1.9, -1.9, "Frame: {}".format(frame), fontsize = 11)
+        plt.gca().spines['top'].set_visible(False) 
+        plt.gca().spines['right'].set_visible(False) 
+        plt.gca().spines['bottom'].set_visible(False) 
+        plt.gca().spines['left'].set_visible(False) 
+        plt.xticks([])
+        plt.yticks([])
+        
+        
+        #plt.text(-2.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(-2.9, -1.9, "Frame: {}".format(frame), fontsize = 11)
+        #plt.text(2.0, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(2.0, -1.7, "Frame: {}".format(frame), fontsize = 11)
+
+        # for wide cup
+        plt.text(2.4, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        # for big cup
+        #plt.text(1.8, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
 
         #plt.show()
-        plt.savefig('./outFrames/frame-'+str(frame)+'.png', format="png")
+        plt.savefig('./outFrames/frame-'+str(frame)+'.png', format="png", bbox_inches="tight")
         
         plt.clf()
 

@@ -321,10 +321,7 @@ void Scenes::scene(Sim * const &sim, const std::string & scenename, const std::s
 }
 
 void Scenes::sceneFromFile(Sim * const &sim, const std::string & filename, const std::string & initialvelocity){
-    int N = sim->n;
-    sim->m.resize_mesh(N);
-
-    setupSceneShapeFromFile(sim->m, filename);
+    setupSceneShapeFromFile(sim->m, filename, sim->n);
     setupSceneVelocities(sim->m.verts, sim->m.vels, initialvelocity);
     setupSceneSolids(sim);
 }
@@ -457,10 +454,42 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
     
 }
 
-void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename){
+void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename, size_t N){
     LiquidMesh::loadMeshFromFile(m, filename);
     
-    int N = m.verts.size();
+    // go through each face. populate with points
+    float perimeter = 0;
+    for(size_t curr_f=0; curr_f<m.faces.size(); curr_f++){
+        perimeter += m.face_length(curr_f);
+    }
+    float point_density = perimeter/N;
+    // roughly do a target N
+    std::vector<Eigen::Vector2d> v_new; v_new.reserve(N);
+    std::vector<Eigen::Vector2i> f_new; f_new.reserve(N);
+    size_t ctr = 0;
+    for(size_t curr_f=0; curr_f<m.faces.size(); curr_f++){
+        Eigen::Vector2d f_start = m.verts[m.faces[curr_f][0]];
+        Eigen::Vector2d f_end = m.verts[m.faces[curr_f][1]];
+        Eigen::Vector2d unit = (f_end-f_start)/((f_end-f_start).norm());
+
+        int N_curr_face = (f_end-f_start).norm()/point_density;
+        
+        for(int i=0; i<N_curr_face; i++){
+            v_new.emplace_back(f_start + i*point_density*unit);
+            f_new.emplace_back(Eigen::Vector2i(ctr, ctr+1));
+            ctr++;
+        }
+    }
+    f_new[ctr-1][1] = 0;
+    
+    if(N != ctr){
+        std::cout<<"Resized liquid mesh to "<<ctr<<" vertices."<<std::endl;
+        N = ctr;
+    }
+    m.resize_mesh(ctr);
+    m.verts = v_new;
+    m.faces = f_new;
+    m.update_neighbor_face_vecs();
 
     m.reset_boundary_types();
     m.vels = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));

@@ -3,7 +3,7 @@ width 4.1
 height 2
 
 time-step 0.005
-simulation-time 40
+simulation-time 40.1
 output-frame-frequency 20
 gravity -1
 

@@ -272,6 +272,12 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
             m.V_t = Eigen::Vector2d(a,b);
         } else if (linetype.compare("rho") == 0){
             ss >> m.rho;
+        } else if (linetype.compare("clamp_translation_x") == 0){
+            ss >> m.clamp_translation_x;
+        }else if (linetype.compare("clamp_translation_y") == 0){
+            ss >> m.clamp_translation_y;
+        }else if (linetype.compare("clamp_rotation") == 0){
+            ss >> m.clamp_rotation;
         }
         else {
             std::cerr << "Invalid line in "<<infileName<<"! Skipping line..." << std::endl;

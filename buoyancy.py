@@ -30,8 +30,14 @@ errs = np.abs(vels[:,1])
 log_errs = np.log(errs)
 log_n = np.log(vels[:,0])
 
-plt.plot(log_n,log_errs)
-plt.scatter(log_n,log_errs)
+#find line of best fit
+a, b = np.polyfit(log_n, log_errs, 1)
+x = np.linspace(min(log_n),max(log_n))
+plt.plot(x, a*x+b, color="orange", zorder=0)
+print(a)
+
+#plt.plot(log_n,log_errs)
+plt.scatter(log_n,log_errs, zorder=1)
 
 plt.title(r"log-log plot of $V_{error}$ vs. mesh resolution $N$")
 plt.xlabel(r"log $|N|$")
@@ -43,5 +49,3 @@ plt.gca().spines['right'].set_visible(False)
 
 #plt.show()
 plt.savefig('./plots/loglog_Verr_N.png', format="png")
-
-    

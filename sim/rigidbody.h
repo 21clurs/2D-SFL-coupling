@@ -31,6 +31,8 @@ class RigidBody : public Mesh
         void setTranslation(Eigen::Vector2d t){ translation = t; };
 
         void setRigidBodyV_t(Eigen::Vector2d V_t_in) { V_t = V_t_in; };
+        void setRigidBodyV_t_x(double V_t_x_in) { V_t.x() = V_t_x_in; };
+        void setRigidBodyV_t_y(double V_t_y_in) { V_t.y() = V_t_y_in; };
         void setRigidBodyV_omega(double V_omega_in) { V_omega = V_omega_in; };
         void setRigidBodyV(Eigen::Vector3d V_in) { V_t = Eigen::Vector2d(V_in.x(), V_in.y()); V_omega = V_in.z(); };
         void setRigidBodyV(Eigen::Vector2d V_t_in, double V_omega_in) { V_t = V_t_in; V_omega = V_omega_in; };
@@ -72,6 +74,10 @@ class RigidBody : public Mesh
         void calculateArea();
         void calculateCOM();
         void calculateMOI();
+
+        bool clamp_translation_x = false;
+        bool clamp_translation_y = false;
+        bool clamp_rotation = false;
 };
 
 #endif
