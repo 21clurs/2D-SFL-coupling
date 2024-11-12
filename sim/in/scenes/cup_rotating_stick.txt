@@ -1,0 +1,35 @@
+scene generic_square_donut
+size-outer 3
+
+output-dir cup_rotating_stick_120
+
+time-step 0.005
+simulation-time 40
+output-frame-frequency 20
+gravity -1
+
+sigma-la 1
+sigma-sl 1
+sigma-sa 1
+rho 1
+
+mesh-size-n 120
+# mesh-density 0.2
+mesh-remesh-iters 6
+mesh-edge-max-ratio 1.3
+mesh-edge-min-ratio 0.7
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity zero
+
+show-marker-particles 1
+markers-left -1.5
+markers-right 1.5
+markers-bottom -1.5
+markers-top 1.5
+markers-spacing 0.1
+
+num-rb 2
+rigid-body-file-1 ./in/solids/stick.txt
+rigid-body-file-2 generic_cup

@@ -26,7 +26,8 @@ for i in range(start,end):
 vels = vels[vels[:,0].argsort()]
 print(vels)
 
-errs = np.abs(vels[:,1])
+errs = np.abs(vels[:,1] - (0.0001)*(0.5/1.5))
+#errs = np.abs(vels[:,1] - (0.0001)*(.3))
 log_errs = np.log(errs)
 log_n = np.log(vels[:,0])
 

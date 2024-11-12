@@ -1,7 +1,7 @@
-v -2.0 1.0
-v -1.5 1.0
-v -1.5 1.5
-v -2.0 1.5
+v 1.5 1.0
+v 3.5 1.0
+v 3.5 1.5
+v 1.5 1.5
 
 f 0 1
 f 1 2
@@ -18,4 +18,4 @@ clamp_translation_x 1
 clamp_translation_y 0
 clamp_rotation 1
 
-rho 1.2
+rho 1

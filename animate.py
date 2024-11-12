@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
+from pathlib import Path
 
 outdir = "./sim/out/"
 frames = os.listdir(outdir)
@@ -16,6 +17,13 @@ if len(sys.argv)>1 and "-framerange" in sys.argv:
     except IndexError:
         print("No valid range of frames entered. Retrieving all frames...")
 
+simFramesDir = ""
+if len(sys.argv)>1 and "-outdir" in sys.argv:
+    i = sys.argv.index("-outdir") 
+    simFramesDir = sys.argv[i+1] + "/"
+    outdir = outdir + simFramesDir + "/"
+    Path('./outFrames/' + simFramesDir).mkdir(parents=True, exist_ok=True)
+
 for frame in range(start, end):
 
     vList = []  # vertices
@@ -28,11 +36,13 @@ for frame in range(start, end):
     mpList = [] # marker particles
     #mpvList = [] # marker particle velocities
     rbCOM = []
+    rbV_t = []
     rbTheta = []
     dt = 0
     outFreq = 1
     bgFieldPos = []
     bgFieldVel = []
+    are = 0
 
     if os.path.isfile(outdir+str(frame)+".txt"):
         with open(outdir+str(frame)+".txt","r") as curr_frame_file:
@@ -80,9 +90,12 @@ for frame in range(start, end):
                 elif r[0] == 'rb':
                     rbCOM.append([ float(r[1]), float(r[2]) ])
                     rbTheta.append(float(r[3]))
+                    rbV_t.append([ float(r[1]), float(r[2]) ])
                 elif r[0] == 'bg':
                     bgFieldPos.append([ float(r[1]), float(r[2]) ])
                     bgFieldVel.append([ float(r[3]), float(r[4]) ])
+                elif r[0] == 'area':
+                    area = float(r[1])
 
         # why? I just like dealing with numpy :')
         # also, idk maybe one day will look into matplotlib .fill()
@@ -119,7 +132,7 @@ for frame in range(start, end):
         #ax.set_xlim([-3, 3])
         #ax.set_ylim([-1.3, 2.0])
         # for big_up cup
-        ax.set_xlim([-3,3.2])
+        ax.set_xlim([-4.0,5.0])
         ax.set_ylim([-1.5, 2.5])
         ax.set_aspect('equal')
 
@@ -155,8 +168,8 @@ for frame in range(start, end):
         plt.gca().spines['right'].set_visible(False) 
         plt.gca().spines['bottom'].set_visible(False) 
         plt.gca().spines['left'].set_visible(False) 
-        plt.xticks([])
-        plt.yticks([])
+        #plt.xticks([])
+        #plt.yticks([])
         
         
         #plt.text(-2.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
@@ -165,12 +178,17 @@ for frame in range(start, end):
         #plt.text(2.0, -1.7, "Frame: {}".format(frame), fontsize = 11)
 
         # for wide cup
-        plt.text(2.4, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(2.4, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        # for extra wide cup
+        plt.text(4.0, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         # for big cup
-        #plt.text(1.8, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(1.8, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+
+        # area
+        #plt.text(4.0, -0.9, "area: {area:.2f}".format(area=area), fontsize = 11)
 
         #plt.show()
-        plt.savefig('./outFrames/frame-'+str(frame)+'.png', format="png", bbox_inches="tight")
+        plt.savefig('./outFrames/' + simFramesDir + 'frame-'+str(frame)+'.png', format="png", bbox_inches="tight")
         
         plt.clf()
 

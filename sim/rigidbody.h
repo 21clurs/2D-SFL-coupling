@@ -53,6 +53,7 @@ class RigidBody : public Mesh
         void collideAndSnap(LiquidMesh& l);
     public:
         static bool loadMeshFromFile(RigidBody &m, std::string infileName);
+        static bool loadCup(RigidBody &m, double size);
 
     protected:
         u_int rb_sim_id;

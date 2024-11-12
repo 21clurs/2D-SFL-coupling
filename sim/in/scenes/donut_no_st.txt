@@ -1,0 +1,31 @@
+scene donut
+radius 1
+
+output-dir donut_no_st_100
+
+time-step 0.005
+simulation-time 4
+output-frame-frequency 4
+gravity 0
+
+sigma-la 0
+sigma-sl 0
+sigma-sa 0
+rho 1
+    
+mesh-size-n 100
+mesh-remesh-iters 0
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity rotational_cw
+
+show-marker-particles 1
+markers-left -1
+markers-right 1
+markers-bottom -1
+markers-top 1
+markers-spacing 0.1
+
+size-outer 2
+size-inner 0.5

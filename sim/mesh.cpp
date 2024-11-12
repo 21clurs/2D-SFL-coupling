@@ -101,6 +101,19 @@ double Mesh::calc_avg_face_length(){
 double Mesh::vert_area(const int vertIndex){
     return (1.0/2.0)*(face_length(faces_from_vert(vertIndex)[0])+face_length(faces_from_vert(vertIndex)[1]));
 }
+
+
+double Mesh::calc_area(){
+    double A = 0;
+    Eigen::Vector2d v_i, v_i_next;
+    for(size_t i=0; i<verts.size(); i++){
+        v_i = verts[i];
+        v_i_next = next_neighbor(i);
+        A += (v_i.x() - v_i_next.y()) - (v_i_next.x()-v_i.y());
+    }
+    return 0.5*A;
+}
+
 const Eigen::Vector2d Mesh::calc_vertex_normal(const int vertIndex){
     Eigen::Vector2i adjacent_face_inds = faces_from_vert(vertIndex);
 

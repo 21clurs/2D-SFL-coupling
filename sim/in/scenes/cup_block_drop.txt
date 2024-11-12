@@ -2,8 +2,10 @@ scene rectangle
 width 4.1
 height 2
 
+output-dir disk_floating_density25_90
+
 time-step 0.005
-simulation-time 40.1
+simulation-time 40.0
 output-frame-frequency 20
 gravity -1
 

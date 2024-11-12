@@ -28,14 +28,4 @@ int main(int argc, char **argv){
   Sim s_noparam;
   s_noparam.run();
 
-  // testing in main again
-  std::vector<Eigen::Vector2d> verts = {
-    
-  };
-  std::vector<Eigen::Vector2i> faces = {
-
-  };
-  LiquidMesh l(verts, faces);
-  Sim s( l, 4, 0.001 );
-  s_noparam.runTest();
 }

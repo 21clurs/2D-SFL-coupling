@@ -1,6 +1,7 @@
 #include "sim.h"
 
 #include <iostream>
+#include <filesystem>
 #include <fstream> 
 #include <stdexcept>
 #include "boundaryintegral.h"
@@ -16,6 +17,7 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     // set a bunch of default sim options
     SimOptions::addStringOption ("scene", "circle");
     SimOptions::addStringOption ("scene-file", "");
+    SimOptions::addStringOption ("output-dir", "");
 
     SimOptions::addStringOption ("test", "none");
 
@@ -30,6 +32,7 @@ bool Sim::setAndLoadSimOptions(std::string infileName){
     SimOptions::addDoubleOption ("rho", 1);
 
     SimOptions::addIntegerOption ("mesh-size-n", 32);
+    SimOptions::addDoubleOption ("mesh-density", 0);
     SimOptions::addIntegerOption ("mesh-remesh-iters", 0);
     SimOptions::addDoubleOption ("mesh-edge-max-ratio", 1.3);
     SimOptions::addDoubleOption ("mesh-edge-min-ratio", 0.7);
@@ -96,7 +99,6 @@ void Sim::run(){
         );
         std::cout<<"Finished generating marker particles."<<std::endl;
     }
-
     // re-mesh some prior to starting
     // just to make the spacing of the liquid mesh nice and stuff
     remesh(6);
@@ -112,6 +114,7 @@ void Sim::run(){
     std::vector<float> oscillation_x;
     int oscillation_tracking_ind = 0;
     bool buoyancy_test = false;
+    bool added_mass_test = false;
     if( SimOptions::strValue("test").compare("oscillation") == 0){
         oscillation_test = true;
         oscillation_t.resize(steps);
@@ -122,6 +125,16 @@ void Sim::run(){
         assert(rigidBodies_unscripted.size()==1);
         buoyancy_test = true;
         std::cout<<"Testing buoyancy!"<<std::endl;
+    } else if( SimOptions::strValue("test").compare("added_mass") == 0){
+        assert(rigidBodies_unscripted.size()==1);
+        added_mass_test = true;
+        std::cout<<"Testing added mass!"<<std::endl;
+    }
+
+    std::string outdirString = "";
+    if( SimOptions::strValue("output-dir").length() >0 ){
+        std::__fs::filesystem::create_directory("./out/"+SimOptions::strValue("output-dir"));
+        outdirString = SimOptions::strValue("output-dir")+"/";
     }
 
     for (int i=0; i<steps; i++){
@@ -132,7 +145,7 @@ void Sim::run(){
         }
         // sim stuff
         if (oscillation_test == false && i%outframe_frequency == 0){
-            outputFrame(std::to_string(frame_num)+".txt");
+            outputFrame(outdirString+std::to_string(frame_num)+".txt");
             frame_num++;
         }
         try {
@@ -141,9 +154,13 @@ void Sim::run(){
             std::cout<<frame_num<<" frames generated."<<std::endl; 
         }
         // testing buoyancy: we output the rigid body velocity 
-        if(i==0 && buoyancy_test == true){
-            outputPostStepV(std::to_string(m.verts.size())+".txt");
-            //std::cout<<rigidBodies_unscripted[0]->V_t.y()<<std::endl;
+        if(i==0) {
+            if (buoyancy_test == true){
+                outputPostStepV(std::to_string(m.verts.size())+".txt", "./out/buoyancy_tests/");
+            }
+            if (added_mass_test == true){
+                outputPostStepV(std::to_string( (int)(SimOptions::doubleValue("size-outer")) )+".txt", "./out/added_mass_tests/added_mass_"+std::to_string((int)(rigidBodies_unscripted[0]->rho*10))+"/");
+            }
         }
 
         // progress messages
@@ -158,9 +175,6 @@ void Sim::run(){
     }
 
     std::cout<<frame_num<<" frames successfully generated!"<<std::endl; 
-}
-
-void Sim::runTest(){
 }
 
 Sim::Sim(){
@@ -258,8 +272,9 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     file<<std::endl;
 
     // vels
-    for (size_t i=0; i<m.faces.size(); i++)
+    for (size_t i=0; i<m.faces.size(); i++){
         file<<"u "<<m.vels[i][0]<<" "<<m.vels[i][1]<<std::endl;
+    }
     file<<std::endl;
 
     // faces
@@ -306,10 +321,14 @@ bool Sim::outputFrame(std::string filename, std::string filelocation){
     file<<std::endl;
     
     // marker particle velocities
-    for (size_t i=0; i<markerparticles.size(); i++){
+    /*for (size_t i=0; i<markerparticles.size(); i++){
         Eigen::Vector2d tmp = HHD_interior(markerparticles[i], 0.01);
         file<<"pv "<<tmp[0]<<" "<<tmp[1]<<std::endl;
-    }
+    }*/
+
+    // AREA aka VOLUME    
+    file<<"area "<<m.calc_area()<<std::endl;
+    
     file.close();
 
     return true;
@@ -324,6 +343,10 @@ void Sim::step_sim(double curr_t){
     remesh(SimOptions::intValue("mesh-remesh-iters"));
     
     step_HHD();
+
+    /*for (size_t i=0; i<m.vels.size(); i++){
+        std::cout<<i<<": "<<m.vels[i].x()<<", "<<m.vels[i].y()<<std::endl;
+    }*/
 
     // body forces are only applied on div-free velocity field.
     step_gravity();
@@ -361,9 +384,22 @@ void Sim::step_advect(double t){
     collide();
     // advect the liquid mesh
     for (size_t i=0; i<n; i++){
-        if (m.is_solid[i] && (m.vels_solid[i].x()!=0 || m.vels_solid[i].y()!=0)){
-            m.verts[i] = m.verts[i] + m.vels_solid[i]*dt;
-            // m.verts[i] = m.verts[i] + m.vels[i]*dt;
+        if (m.is_solid[i]){ //&& (m.vels_solid[i].x()!=0 || m.vels_solid[i].y()!=0)){
+            /*Eigen::Vector2d n_i = -m.calc_vertex_normal(i);
+            Eigen::Vector2d vs_n = m.vels_solid[i].dot(n_i) * (n_i);
+            Eigen::Matrix2d P = Eigen::Matrix2d::Identity()-n_i*n_i.transpose();
+            Eigen::Vector2d vs_t = P*m.vels[i];
+            m.vels[i] = vs_n + vs_t;*/
+            m.verts[i] = m.verts[i] + m.vels[i]*dt;
+
+            //m.vels[i] = m.vels_solid[i].dot(-m.calc_vertex_normal(i)) * (-m.calc_vertex_normal(i));
+            //m.verts[i] = m.verts[i] + m.vels[i]*dt;
+            
+            //m.verts[i] = m.verts[i] + m.vels_solid[i]*dt;
+            //std::cout<<"???"<<std::endl;
+            
+            /*m.vels[i] = m.vels_solid[i];
+            m.verts[i] = m.verts[i] + m.vels[i]*dt;*/
         }
         else{
             m.verts[i] = m.verts[i] + m.vels[i]*dt;
@@ -406,7 +442,8 @@ void Sim::step_solidinfluxreverse(){
 */
 
 void Sim::step_HHD(){
-    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
+    const std::vector<Eigen::Vector2d> quadrature_GQ4 = BoundaryIntegral::gaussian_quadrature();
+    const std::vector<Eigen::Vector2d> quadrature_GQ1 = BoundaryIntegral::gaussian_quadrature(1);
     const std::vector<Eigen::Vector2d> quadrature_DE = BoundaryIntegral::tanh_sinh_quadrature();
 
     const double negOneOver2pi = -1.0/(2.0*M_PI);
@@ -482,9 +519,9 @@ void Sim::step_HHD(){
                     } else{
                         // gradPhi
                         double val_gradPhi = 0;
-                        for (size_t qj=0; qj<quadrature_GQ.size(); qj++){
-                            double qjk = quadrature_GQ[qj].x();
-                            double qjw = quadrature_GQ[qj].y();
+                        for (size_t qj=0; qj<quadrature_GQ1.size(); qj++){
+                            double qjk = quadrature_GQ1[qj].x();
+                            double qjw = quadrature_GQ1[qj].y();
                             
                             Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(f_j)[0]], m.verts[m.verts_from_face(f_j)[1]], qjk);
                             Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(f_j)[0]], m.vels[m.verts_from_face(f_j)[1]], qjk);
@@ -555,7 +592,7 @@ void Sim::step_gravity(){
         rigidBodies_unscripted[k]->setRigidBodyV(rigidBodies_unscripted[k]->retrieveRigidBodyV() + Eigen::Vector3d(gravity.x()*dt, gravity.y()*dt, 0));
         rigidBodies_unscripted[k]->updatePerVertexVels();
     }
-    collide(); // get the new rigid body vertices onto the liquid mesh?
+    collide(); // get the new rigid body vertices onto the "vels_solid" of liquid mesh?
 }
 
 void Sim::step_BEM(){
@@ -594,6 +631,9 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             
             BC_p[i] = sigma * H_i * dt;     // known
             BC_dpdn[i] = 0;                 // unknown
+            if(abs(BC_p[i])<=5e-16)
+                BC_p[i] = 0;
+            //std::cout<<i<<": "<<"p "<<BC_p[i]<<std::endl;
         }
         // 'solid' vertex: if it is explicity solid vertex or both incident faces are solid faces
         else if (m.is_solid[i] || (face_is_solid[incident_faces[0]] && face_is_solid[incident_faces[1]])){
@@ -601,6 +641,9 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
 
             BC_p[i] = 0;
             BC_dpdn[i] = n_i.dot(m.vels[i]) * rho;
+            if(abs(BC_dpdn[i])<=5e-16)
+                BC_dpdn[i] = 0;
+            //std::cout<<i<<": "<<"dpdn "<<BC_dpdn[i]<<std::endl;
         }
         // triple junction
         else{
@@ -638,6 +681,11 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
 
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
             BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: this is dpdn_s only, not the full dpdn
+            if(abs(BC_p[i])<=5e-16)
+                BC_p[i] = 0;
+            if(abs(BC_dpdn[i])<=5e-16)
+                BC_dpdn[i] = 0;
+            //std::cout<<i<<": "<<"p "<<BC_p[i]<<", dpdn "<<BC_dpdn[i]<<std::endl;
         }
     }
 
@@ -847,9 +895,9 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             
             // populate A_bottomleft block            
             if (m.is_solid[i] && (m.per_vertex_rb_contact[i] == rigidBodies_unscripted[k]->rb_sim_id)){
-                Eigen::Vector2d n_i = m.calc_vertex_normal(i); // normal should point into the solid
-                Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
-                A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i); // remember, this is an integral, multiply by area is important
+                //Eigen::Vector2d n_i = m.calc_vertex_normal(i); // normal should point into the solid
+                //Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
+                //A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i); // remember, this is an integral, multiply by area is important
                 /*Eigen::Vector2d n_0 = m.calc_face_normal(m.faces_from_vert(i)[0]);
                 float d_0 = m.face_length(m.faces_from_vert(i)[0]);
                 Eigen::Vector2d n_1 = m.calc_face_normal(m.faces_from_vert(i)[1]);
@@ -859,13 +907,13 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
                 Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
                 A_bottomleft.block(k*3,i,3,1) = J * m.vert_area(i); // remember, this is an integral, multiply by area is important*/
                 
-                /*Eigen::Vector2d n_0 = m.calc_face_normal(m.faces_from_vert(i)[0]);
+                Eigen::Vector2d n_0 = m.calc_face_normal(m.faces_from_vert(i)[0]);
                 float d_0 = m.face_length(m.faces_from_vert(i)[0]);
                 Eigen::Vector2d n_1 = m.calc_face_normal(m.faces_from_vert(i)[1]);
                 float d_1 = m.face_length(m.faces_from_vert(i)[1]);
                 Eigen::Vector2d n_i = 0.5 * (d_0 * n_0 + d_1 * n_1);
                 Eigen::Vector3d J = Eigen::Vector3d(n_i.x(), n_i.y(), cross2d(m.verts[i]-(rigidBodies_unscripted[k]->com+rigidBodies_unscripted[k]->translation), n_i));
-                A_bottomleft.block(k*3,i,3,1) = J;*/
+                A_bottomleft.block(k*3,i,3,1) = J;
             }
 
             // add in contributions relevant to triple points on the RHS
@@ -943,6 +991,10 @@ void Sim::step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
     std::cout<<"P: "<<std::endl;
     std::cout<<p<<std::endl;
     std::cout<<std::endl;
+
+    std::cout<<"dPdn: "<<std::endl;
+    std::cout<<dpdn<<std::endl;
+    std::cout<<std::endl;
     */
     assert(p == p);
     assert(dpdn == dpdn);
@@ -975,6 +1027,7 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
         if (!m.is_triple[i]){
             dpdt[i] = (dpdt_face[neighbor_faces[0]]*m.face_length(neighbor_faces[0]) + dpdt_face[neighbor_faces[1]]*m.face_length(neighbor_faces[1])) / (m.face_length(neighbor_faces[0]) + m.face_length(neighbor_faces[1]));
             dv[i] = -(1.0/rho) * (dpdt[i]*t_i + dpdn[i]*n_i);
+            //std::cout<<i<<" gradp: "<<dpdt[i]*t_i + dpdn[i]*n_i<<std::endl;
         } else{
             //double dpdn_S, dpdn_A;
             double dpdt_SL, dpdt_LA;
@@ -1015,8 +1068,9 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             /*
             std::cout<<"gradp_proj: "<<gradp_proj<<std::endl;
             std::cout<<"gradp_proj_rhs: "<<gradp_proj_rhs<<std::endl;
-            std::cout<<"gradp: "<<gradp<<std::endl;
             */
+            //std::cout<<i<<" gradp: "<<gradp<<std::endl;
+            
             dv[i] = -(1.0/rho) * gradp;
         }
     }
@@ -1040,13 +1094,16 @@ void Sim::step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies){
             rigidBodies_unscripted[i]->setRigidBodyV_omega(V_rigidBodies[i].z());
         rigidBodies_unscripted[i]->updatePerVertexVels();
     }
+
+    // this also gets all the solid velocities onto the liquid mesh
+    collide();
 }
 
 Eigen::Vector2d Sim::HHD_interior(Eigen::Vector2d x, double delta){
     // we do HHD here to evaluate/approximate velocity at x, where x is NOT on the boundary
     // therefore, no need to worry about singularities
 
-    const std::vector<Eigen::Vector2d> quadrature_GQ = BoundaryIntegral::gaussian_quadrature();
+    const std::vector<Eigen::Vector2d> quadrature_GQ4 = BoundaryIntegral::gaussian_quadrature();
     double jacobian = 0.5;
 
     Eigen::Vector2d gradPhi = Eigen::Vector2d::Zero();
@@ -1057,9 +1114,9 @@ Eigen::Vector2d Sim::HHD_interior(Eigen::Vector2d x, double delta){
 
         Eigen::Vector2d phi_face = Eigen::Vector2d::Zero();
         Eigen::Vector2d A_face = Eigen::Vector2d::Zero();
-        for (size_t qi = 0; qi<quadrature_GQ.size(); qi++){
-            double qik = quadrature_GQ[qi].x();
-            double qiw = quadrature_GQ[qi].y();
+        for (size_t qi = 0; qi<quadrature_GQ4.size(); qi++){
+            double qik = quadrature_GQ4[qi].x();
+            double qiw = quadrature_GQ4[qi].y();
             
             Eigen::Vector2d y = lin_interp(m.verts[m.verts_from_face(i)[0]], m.verts[m.verts_from_face(i)[1]], qik);
             Eigen::Vector2d v_y = lin_interp(m.vels[m.verts_from_face(i)[0]], m.vels[m.verts_from_face(i)[1]], qik);
@@ -1104,13 +1161,13 @@ void Sim::remesh(int remesh_itr){
 
 void Sim::collide(){
     m.reset_boundary_types();
-    // collide liquid mesh with each unscripted solid
-    for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
-        rigidBodies_unscripted[i]->collideAndSnap(m);
-    }
     // collide liquid mesh with each scripted solid
     for (size_t i=0; i<rigidBodies_scripted.size(); i++){
         rigidBodies_scripted[i]->collideAndSnap(m);
+    }
+    // collide liquid mesh with each unscripted solid
+    for (size_t i=0; i<rigidBodies_unscripted.size(); i++){
+        rigidBodies_unscripted[i]->collideAndSnap(m);
     }
     // recalibrate triple points
     m.update_triple_points();

@@ -302,3 +302,40 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
 
     return true;
 }
+
+bool RigidBody::loadCup(RigidBody &m, double size){
+    std::vector<Eigen::Vector2d> v(8);
+    std::vector<Eigen::Vector2i> f(8);
+    double coord = size/2;
+    double cupLip = 0.5;
+    double cupThick = 0.2;
+    v[0] = Eigen::Vector2d(coord, coord+cupLip);
+    v[1] = Eigen::Vector2d(coord, -coord);
+    v[2] = Eigen::Vector2d(-coord, -coord);
+    v[3] = Eigen::Vector2d(-coord, coord+cupLip);
+    v[4] = Eigen::Vector2d(-coord-cupThick, coord+cupLip);
+    v[5] = Eigen::Vector2d(-coord-cupThick, -coord-cupThick);
+    v[6] = Eigen::Vector2d(coord+cupThick, -coord-cupThick);
+    v[7] = Eigen::Vector2d(coord+cupThick, coord+cupLip);
+    for(int i=0; i<8; i++){
+        f[i] = Eigen::Vector2i(i,(i+1)%8);
+    }
+
+    assert(v.size() == f.size());
+
+    m.verts_no_transform = v;
+    m.verts = v;
+    m.faces = f;
+    m.update_neighbor_face_vecs();
+
+    m.vels.resize(v.size());
+    
+    m.updateRigidBodyVars();
+    m.updateVerts();
+    m.updatePerVertexVels();
+
+    m.mass = m.rho*m.area;
+
+    return true;
+
+}

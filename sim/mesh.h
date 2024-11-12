@@ -40,6 +40,7 @@ class Mesh
         double calc_total_face_length();
         double calc_avg_face_length();
         double vert_area(const int vertIndex);
+        double calc_area();
 
         const Eigen::Vector2d calc_vertex_normal(const int vertIndex);
         const Eigen::Vector2d calc_vertex_tangent(const int vertIndex);

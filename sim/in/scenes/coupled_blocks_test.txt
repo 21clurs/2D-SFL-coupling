@@ -1,16 +1,18 @@
 scene-file ./in/liquids/u_shape_actual.txt
 
+output-dir coupled_blocks_oscillation_test_160
+
 time-step 0.005
 simulation-time 40
 output-frame-frequency 20
 gravity -1
 
-sigma-la 1
-sigma-sl 1
-sigma-sa 1
+sigma-la 0
+sigma-sl 0
+sigma-sa 0
 rho 1
     
-mesh-size-n 150
+mesh-size-n 160
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.3
 mesh-edge-min-ratio 0.7

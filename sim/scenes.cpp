@@ -189,6 +189,7 @@ namespace {
     }
     void gen_generic_donut(int n, const Eigen::Vector2d& center, double r_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
         // assumes at least one rigid body that this donut spawns around
+        // and assumes that rigid body is stored in rigid-body-file-1
         assert(SimOptions::intValue("num-rb") >= 1);
         RigidBody *m = new RigidBody();
         RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
@@ -224,6 +225,7 @@ namespace {
     }
     void gen_generic_square_donut(int n, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
         // assumes at least one rigid body that this donut spawns around
+        // and assumes that rigid body is stored in rigid-body-file-1
         assert(SimOptions::intValue("num-rb") >= 1);
         RigidBody *m = new RigidBody();
         RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
@@ -260,8 +262,35 @@ namespace {
         for(size_t i=0; i<n_outer; i++)
             f[n_inner + i] = Eigen::Vector2i(n_inner + i, n_inner + (i+1)%n_outer);
     }
+    void gen_generic_square_donut_outline(const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+        // assumes at least one rigid body that this donut spawns around
+        // and assumes that rigid body is stored in rigid-body-file-1
+        assert(SimOptions::intValue("num-rb") >= 1);
+        RigidBody *m = new RigidBody();
+        RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
+
+        int n_inner = m->verts.size();
+        v.resize(n_inner+4);
+        f.resize(n_inner+4);
+
+        for (size_t i=0; i<n_inner; i++){
+            v[i] = m->verts[i];
+            f[i] = Eigen::Vector2i(m->faces[i].y(),m->faces[i].x());
+        }
+        v[n_inner] = Eigen::Vector2d(-sideLength_outer/2, -sideLength_outer/2);
+        v[n_inner+1] = Eigen::Vector2d(sideLength_outer/2, -sideLength_outer/2);
+        v[n_inner+2] = Eigen::Vector2d(sideLength_outer/2, sideLength_outer/2);
+        v[n_inner+3] = Eigen::Vector2d(-sideLength_outer/2, sideLength_outer/2);
+        
+        f[n_inner] = Eigen::Vector2i(n_inner, n_inner+1);
+        f[n_inner+1] = Eigen::Vector2i(n_inner+1, n_inner+2);
+        f[n_inner+2] = Eigen::Vector2i(n_inner+2, n_inner+3);
+        f[n_inner+3] = Eigen::Vector2i(n_inner+3, n_inner);
+    }
+
     void gen_generic_swiss_cheese(int n, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
         // assumes at least one rigid body that this cheese spawns around
+        // and assumes that CUP is stored in rigid-body-file-1-- all other rigid bodies to spawn around are later numbers
         assert(SimOptions::intValue("num-rb") >= 1);
 
         int n_inner = 0;
@@ -329,7 +358,11 @@ void Scenes::sceneFromFile(Sim * const &sim, const std::string & filename, const
 void Scenes::setupSceneSolids(Sim * const &sim){
     for (int i=1; i<=SimOptions::intValue("num-rb"); i++){
         RigidBody *r = new RigidBody();
-        RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-"+std::to_string(i)));
+        if ( SimOptions::strValue("rigid-body-file-"+std::to_string(i)).compare("generic_cup")==0){
+            RigidBody::loadCup(*r, SimOptions::doubleValue("size-outer"));
+        } else {
+            RigidBody::loadMeshFromFile(*r, SimOptions::strValue("rigid-body-file-"+std::to_string(i)));
+        }
         sim->addRigidBody(r);
     }
 }
@@ -340,118 +373,200 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
     std::vector<Eigen::Vector2d> v(N, Eigen::Vector2d(0,0));
     std::vector<Eigen::Vector2i> f(N, Eigen::Vector2i(0,0));
 
-    if (scenename == "circle"){
+    if (scenename == "generic_square_donut" && (SimOptions::doubleValue("mesh-density") != 0)){
+        double point_density = SimOptions::doubleValue("mesh-density");
+        double d_outer = SimOptions::doubleValue("size-outer");
+        gen_generic_square_donut_outline(Eigen::Vector2d(0.0,0.0), d_outer, v, f);
 
-        double r = SimOptions::doubleValue("radius");
+        int N_tmp = v.size();
+        m.resize_mesh(N_tmp);
+        for (size_t i = 0; i < v.size(); i++)
+            m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
+        for (size_t i = 0; i < f.size(); i++) 
+            m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
 
-        gen_ellipse(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
-    } else if (scenename == "rectangle"){
-        double w = SimOptions::doubleValue("width");
-        double h = SimOptions::doubleValue("height");
-
-        gen_rectangle(N, Eigen::Vector2d(0.0,0.0), w, h, v, f);
-
-    } else if (scenename == "ellipse"){
-        double a = SimOptions::doubleValue("axis-horizontal");
-        double b = SimOptions::doubleValue("axis-vertical");
-
-        gen_ellipse(N, Eigen::Vector2d(0.0,0.0), a, b, v, f);
-
-    } else if (scenename == "oscillation_test"){
-        float theta = 2*M_PI/N;
-        
-        double a = 1.0/3.0;
-        double eps = 0.05*a;
-        int m = 2; // the mode of oscillation we are interested in
-
-        double r;
-
-        v.resize(N);
-        f.resize(N);
-
-        for (size_t i=0; i<N; i++){
-            r = a + eps*cos(m*theta*i);
-
-            v[i].x() = r*cos(theta*i);
-            v[i].y() = r*sin(theta*i);
-
-            f[i] = Eigen::Vector2i(i,(i+1)%N);
+        // go through each face. populate with points
+        float perimeter = 0;
+        for(size_t curr_f=0; curr_f<m.faces.size(); curr_f++){
+            perimeter += m.face_length(curr_f);
         }
-    } else if (scenename == "semicircle_horizontal") {
-        double r = SimOptions::doubleValue("radius");
+        int N_estimate = perimeter/point_density;
+        // roughly do a target N
+        std::vector<Eigen::Vector2d> v_new; v_new.reserve(N_estimate);
+        std::vector<Eigen::Vector2i> f_new; f_new.reserve(N_estimate);
+        // going arround the inner shape first
+        size_t ctr = 0;
+        for(size_t curr_f=0; curr_f<m.faces.size()-4; curr_f++){
+            Eigen::Vector2d f_start = m.verts[m.faces[curr_f][0]];
+            Eigen::Vector2d f_end = m.verts[m.faces[curr_f][1]];
+            Eigen::Vector2d unit = (f_end-f_start)/((f_end-f_start).norm());
 
-        gen_semicircle_h(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+            int N_curr_face = (f_end-f_start).norm()/point_density;
+            
+            for(int i=0; i<N_curr_face; i++){
+                v_new.emplace_back(f_start + i*point_density*unit);
+                f_new.emplace_back(Eigen::Vector2i(ctr+1,ctr));
+                ctr++;
+            }
+        }
+        f_new[ctr-1][0] = 0;
+        int tmp = ctr;
+        for(size_t curr_f=m.faces.size()-4; curr_f<m.faces.size(); curr_f++){
+            Eigen::Vector2d f_start = m.verts[m.faces[curr_f][0]];
+            Eigen::Vector2d f_end = m.verts[m.faces[curr_f][1]];
+            Eigen::Vector2d unit = (f_end-f_start)/((f_end-f_start).norm());
 
-    } else if (scenename == "semicircle_vertical"){
-        double r = SimOptions::doubleValue("radius");
+            int N_curr_face = (f_end-f_start).norm()/point_density;
+            
+            for(int i=0; i<N_curr_face; i++){
+                v_new.emplace_back(f_start + i*point_density*unit);
+                f_new.emplace_back(Eigen::Vector2i(ctr, ctr+1));
+                ctr++;
+            }
+        }
+        f_new[ctr-1][1] = tmp;
+        
+        if(N != ctr){
+            std::cout<<"Resized liquid mesh to "<<ctr<<" vertices."<<std::endl;
+            N = ctr;
+        }
+        m.resize_mesh(ctr);
+        m.verts = v_new;
+        m.faces = f_new;
+        m.update_neighbor_face_vecs();
 
-        gen_semicircle_v(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+        m.reset_boundary_types();
+        m.vels = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
+        m.vels_solid = std::vector<Eigen::Vector2d>(N, Eigen::Vector2d(0,0));
+        m.is_corner = std::vector<bool>(N, false);
+        m.reset_face_length_limits(); // this is fairly important to set!
 
-    } else if (scenename == "donut"){
-        double r_outer = SimOptions::doubleValue("radius-outer");
-        double r_inner = SimOptions::doubleValue("radius-inner");
-
-        gen_donut(N, Eigen::Vector2d(0.0,0.0), r_inner, r_outer, v, f);
-
-    } else if (scenename == "square_donut"){
-        double d_outer = SimOptions::doubleValue("size-outer");
-        double d_inner = SimOptions::doubleValue("size-inner");
-
-        gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
-
-    } else if (scenename == "generic_donut"){
-        double r_outer = SimOptions::doubleValue("radius-outer");
-
-        gen_generic_donut(N, Eigen::Vector2d(0.0,0.0), r_outer, v, f);
-
-    } else if (scenename == "generic_square_donut"){
-        double d_outer = SimOptions::doubleValue("size-outer");
-
-        gen_generic_square_donut(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
-
-    } else if (scenename == "generic_swiss_cheese"){
-        double d_outer = SimOptions::doubleValue("size-outer");
-
-        gen_generic_swiss_cheese(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
-
-    }else if (scenename == "circle_inverted"){
-        double r = SimOptions::doubleValue("radius");
-
-        gen_ellipse_invert(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+        // double checking
+        assert(N == m.verts.size());
+        assert(N == m.vels.size());
+        assert(N == m.faces.size());
+        assert(N == m.vertsPrevFace.size());
+        assert(N == m.vertsNextFace.size());
+        assert(N == m.vels_solid.size());
+        assert(N == m.is_air.size());
+        assert(N == m.is_solid.size());
+        assert(N == m.is_triple.size());
+        assert(N == m.is_corner.size());
 
     } else {
-        std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
-        return;
+
+        if (scenename == "circle"){
+
+            double r = SimOptions::doubleValue("radius");
+
+            gen_ellipse(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+        } else if (scenename == "rectangle"){
+            double w = SimOptions::doubleValue("width");
+            double h = SimOptions::doubleValue("height");
+
+            gen_rectangle(N, Eigen::Vector2d(0.0,0.0), w, h, v, f);
+
+        } else if (scenename == "ellipse"){
+            double a = SimOptions::doubleValue("axis-horizontal");
+            double b = SimOptions::doubleValue("axis-vertical");
+
+            gen_ellipse(N, Eigen::Vector2d(0.0,0.0), a, b, v, f);
+
+        } else if (scenename == "oscillation_test"){
+            float theta = 2*M_PI/N;
+            
+            double a = 1.0/3.0;
+            double eps = 0.05*a;
+            int m = 2; // the mode of oscillation we are interested in
+
+            double r;
+
+            v.resize(N);
+            f.resize(N);
+
+            for (size_t i=0; i<N; i++){
+                r = a + eps*cos(m*theta*i);
+
+                v[i].x() = r*cos(theta*i);
+                v[i].y() = r*sin(theta*i);
+
+                f[i] = Eigen::Vector2i(i,(i+1)%N);
+            }
+        } else if (scenename == "semicircle_horizontal") {
+            double r = SimOptions::doubleValue("radius");
+
+            gen_semicircle_h(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+
+        } else if (scenename == "semicircle_vertical"){
+            double r = SimOptions::doubleValue("radius");
+
+            gen_semicircle_v(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+
+        } else if (scenename == "donut"){
+            double r_outer = SimOptions::doubleValue("radius-outer");
+            double r_inner = SimOptions::doubleValue("radius-inner");
+
+            gen_donut(N, Eigen::Vector2d(0.0,0.0), r_inner, r_outer, v, f);
+
+        } else if (scenename == "square_donut"){
+            double d_outer = SimOptions::doubleValue("size-outer");
+            double d_inner = SimOptions::doubleValue("size-inner");
+
+            gen_square_donut(N, Eigen::Vector2d(0.0,0.0), d_inner, d_outer, v, f);
+
+        } else if (scenename == "generic_donut"){
+            double r_outer = SimOptions::doubleValue("radius-outer");
+
+            gen_generic_donut(N, Eigen::Vector2d(0.0,0.0), r_outer, v, f);
+
+        } else if (scenename == "generic_square_donut"){
+            double d_outer = SimOptions::doubleValue("size-outer");
+
+            gen_generic_square_donut(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
+
+        } else if (scenename == "generic_swiss_cheese"){
+            double d_outer = SimOptions::doubleValue("size-outer");
+
+            gen_generic_swiss_cheese(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
+
+        }else if (scenename == "circle_inverted"){
+            double r = SimOptions::doubleValue("radius");
+
+            gen_ellipse_invert(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);
+
+        } else {
+            std::cout<<"\""<< scenename<<"\" is not a valid scene. Please enter a valid scene!"<<std::endl;
+            return;
+        }
+
+        if (N != v.size()){
+            std::cout<<"Mesh was resized to have "<<v.size()<<" verts in order to better setup scene."<<std::endl;
+            N = v.size();
+            m.resize_mesh(N);
+        }
+
+        std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
+
+        std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
+
+        std::vector<bool> air(N, true);
+        std::vector<bool> solid(N, false);
+        std::vector<bool> triple(N, false);
+        std::vector<bool> corner(N, false);
+
+        for (size_t i = 0; i < v.size(); i++) 
+            m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
+        for (size_t i = 0; i < f.size(); i++) 
+            m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
+
+        m.update_neighbor_face_vecs();
+        m.reset_face_length_limits();
+        
+        for (size_t i = 0; i < v_solid.size(); i++) 
+            m.vels_solid[i] = Eigen::Vector2d (v_solid[i][0], v_solid[i][1]);    
+
+        m.set_boundaries(air, solid, triple, corner);
     }
-
-    if (N != v.size()){
-        std::cout<<"Mesh was resized to have "<<v.size()<<" verts in order to better setup scene."<<std::endl;
-        N = v.size();
-        m.resize_mesh(N);
-    }
-
-    std::vector<Eigen::Vector2d> u(N, Eigen::Vector2d(0,0));
-
-    std::vector<Eigen::Vector2d> v_solid(N, Eigen::Vector2d(0,0));
-
-    std::vector<bool> air(N, true);
-    std::vector<bool> solid(N, false);
-    std::vector<bool> triple(N, false);
-    std::vector<bool> corner(N, false);
-
-    for (size_t i = 0; i < v.size(); i++) 
-        m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
-    for (size_t i = 0; i < f.size(); i++) 
-        m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
-
-    m.update_neighbor_face_vecs();
-    m.reset_face_length_limits();
-    
-    for (size_t i = 0; i < v_solid.size(); i++) 
-        m.vels_solid[i] = Eigen::Vector2d (v_solid[i][0], v_solid[i][1]);    
-
-    m.set_boundaries(air, solid, triple, corner);
-    
 }
 
 void Scenes::setupSceneShapeFromFile(LiquidMesh& m, const std::string & filename, size_t N){

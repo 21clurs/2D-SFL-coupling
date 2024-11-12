@@ -29,7 +29,7 @@ f 12 13
 f 13 0
 
 theta 0
-translation -1.2 1.01
+translation -1.2 1.05
 
 u_rotational 0
 u_translational 0 0

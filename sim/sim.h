@@ -41,7 +41,6 @@ class Sim
 
         static bool setAndLoadSimOptions(std::string infileName);
         void run();
-        void runTest();
 
         static double cross2d(Eigen::Vector2d a, Eigen::Vector2d b);
     private:
