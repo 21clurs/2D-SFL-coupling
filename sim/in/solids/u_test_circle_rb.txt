@@ -29,9 +29,13 @@ f 12 13
 f 13 0
 
 theta 0
-translation -1.2 1.05
+translation -1.2 1.01
 
 u_rotational 0
 u_translational 0 0
+
+clamp_translation_x 1
+clamp_translation_y 0
+clamp_rotation 0
 
 rho 0.5

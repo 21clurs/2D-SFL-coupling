@@ -1,10 +1,10 @@
 scene-file ./in/liquids/u_shape_wider.txt
 
-output-dir u_steady_test_wider_gq1_80
+output-dir u_steady_test_wider_round_160
 
-time-step 0.005
+time-step 0.01
 simulation-time 40
-output-frame-frequency 20
+output-frame-frequency 10
 gravity -1
 
 sigma-la 0
@@ -12,7 +12,7 @@ sigma-sl 0
 sigma-sa 0
 rho 1
     
-mesh-size-n 80
+mesh-size-n 160
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.3
 mesh-edge-min-ratio 0.7
@@ -29,7 +29,7 @@ markers-top 1.5
 markers-spacing 0.1
 
 num-rb 2
-rigid-body-file-1 ./in/solids/square_stationary.txt
-rigid-body-file-2 ./in/solids/cup_bigger_wider_up.txt
+rigid-body-file-1 ./in/solids/square_stationary_round.txt
+rigid-body-file-2 ./in/solids/cup_bigger_wider_up_round.txt
 # rigid-body-file-3 ./in/solids/u_test_block_rb_wider.txt
 # rigid-body-file-4 ./in/solids/u_test_block2_rb_wider.txt

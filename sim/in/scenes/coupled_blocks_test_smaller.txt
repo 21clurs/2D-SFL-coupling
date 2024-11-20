@@ -1,0 +1,35 @@
+scene-file ./in/liquids/u_shape_actual.txt
+
+output-dir coupled_blocks_oscillation_test_again_roundroundround_100
+
+time-step 0.01
+simulation-time 40
+output-frame-frequency 10
+gravity -1
+
+sigma-la 0
+sigma-sl 0
+sigma-sa 0
+rho 1
+    
+mesh-size-n 100
+mesh-remesh-iters 6
+mesh-edge-max-ratio 1.3
+mesh-edge-min-ratio 0.7
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity zero
+
+show-marker-particles 0
+markers-left -1.5
+markers-right 1.5
+markers-bottom -1.5
+markers-top 1.5
+markers-spacing 0.1
+
+num-rb 4
+rigid-body-file-1 ./in/solids/square_stationary_again_round.txt
+rigid-body-file-2 ./in/solids/cup_bigger_up_round.txt
+rigid-body-file-3 ./in/solids/u_test_block_rb_round.txt
+rigid-body-file-4 ./in/solids/u_test_block2_rb_round.txt

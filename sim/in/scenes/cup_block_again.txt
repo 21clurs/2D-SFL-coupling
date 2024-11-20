@@ -1,11 +1,11 @@
 scene generic_square_donut
-size-outer 3.1
+size-outer 4
 
-output-dir disk_in_cup_density10_100
+output-dir disk_in_cup_density10_round_100
 
 time-step 0.005
-simulation-time 20
-output-frame-frequency 10
+simulation-time 40
+output-frame-frequency 20
 gravity -1
 
 sigma-la 1
@@ -23,10 +23,10 @@ mesh-collision-epsilon 0.01
 mesh-initial-velocity zero
 
 show-marker-particles 1
-markers-left -1.5
-markers-right 1.5
-markers-bottom -1.5
-markers-top 1.5
+markers-left -2
+markers-right 2
+markers-bottom -2
+markers-top 2
 markers-spacing 0.1
 
 num-rb 2
@@ -34,5 +34,5 @@ rigid-body-file-1 ./in/solids/circle_rb_3.txt
 # rigid-body-file-1 ./in/solids/square_rb.txt
 # rigid-body-file-2 ./in/solids/cup_box.txt
 # rigid-body-file-1 ./in/solids/Lshape_rb.txt
-rigid-body-file-2 ./in/solids/cup_bigger.txt
+rigid-body-file-2 ./in/solids/cup_bigger_round.txt
 # rigid-body-file-3 ./in/solids/cup_lid.txt

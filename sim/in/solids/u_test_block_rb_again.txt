@@ -1,0 +1,21 @@
+v 1.0 1.0
+v 2.0 1.0
+v 2.0 1.5
+v 1.0 1.5
+
+f 0 1
+f 1 2
+f 2 3
+f 3 0
+
+theta 0
+translation 0 0
+
+u_rotational 0
+u_translational 0 0
+
+clamp_translation_x 1
+clamp_translation_y 0
+clamp_rotation 1
+
+rho 1

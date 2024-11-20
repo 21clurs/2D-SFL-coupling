@@ -381,13 +381,13 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         int N_tmp = v.size();
         m.resize_mesh(N_tmp);
         for (size_t i = 0; i < v.size(); i++)
-            m.verts[i] = Eigen::Vector2d (v[i].x(), v[i].y());
+            m.verts[i] = v[i];
         for (size_t i = 0; i < f.size(); i++) 
-            m.faces[i] = Eigen::Vector2i (f[i][0], f[i][1]);
+            m.faces[i] = f[i];
 
         // go through each face. populate with points
         float perimeter = 0;
-        for(size_t curr_f=0; curr_f<m.faces.size(); curr_f++){
+        for(size_t curr_f=m.faces.size()-4; curr_f<m.faces.size(); curr_f++){
             perimeter += m.face_length(curr_f);
         }
         int N_estimate = perimeter/point_density;
@@ -396,7 +396,12 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
         std::vector<Eigen::Vector2i> f_new; f_new.reserve(N_estimate);
         // going arround the inner shape first
         size_t ctr = 0;
-        for(size_t curr_f=0; curr_f<m.faces.size()-4; curr_f++){
+        for(size_t i=0; i<m.verts.size()-4; i++){
+            v_new.emplace_back(m.verts[i]);
+            f_new.emplace_back(m.faces[i]);
+            ctr++;
+        }
+        /*for(size_t curr_f=0; curr_f<m.faces.size()-4; curr_f++){
             Eigen::Vector2d f_start = m.verts[m.faces[curr_f][0]];
             Eigen::Vector2d f_end = m.verts[m.faces[curr_f][1]];
             Eigen::Vector2d unit = (f_end-f_start)/((f_end-f_start).norm());
@@ -409,7 +414,7 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
                 ctr++;
             }
         }
-        f_new[ctr-1][0] = 0;
+        f_new[ctr-1][0] = 0;*/
         int tmp = ctr;
         for(size_t curr_f=m.faces.size()-4; curr_f<m.faces.size(); curr_f++){
             Eigen::Vector2d f_start = m.verts[m.faces[curr_f][0]];

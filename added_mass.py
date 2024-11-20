@@ -9,7 +9,7 @@ import math
 if len(sys.argv)>1:
     rb_density = float(sys.argv[1])
 
-outdir = f"./sim/out/added_mass_tests/added_mass_{int(rb_density*10)}/"
+outdir = f"./sim/out/added_mass_tests_again/added_mass_{int(rb_density*10)}/"
 test_files = os.listdir(outdir)
 start = 0
 end = len(test_files)
@@ -64,11 +64,13 @@ print(a)
 plt.scatter(domain, velocity_data, zorder=1)
 #plt.scatter(log_domain,log_errs, zorder=1)
 
+#plt.gca().set_ylim(bottom=0)
+
 
 #plt.title(r"log-log plot of $V_{error}$ vs. domain size $d$, $\rho_{solid}=$"+str(rb_density)+r"$\rho_{liquid}$")
 #plt.xlabel(r"log $|d|$")
 #plt.ylabel(r"log $|V_{error}|$")
-plt.title(r"Plot of $||\mathbf{v}||$ vs. domain size $d$, $\rho_{solid}=$"+str(rb_density)+r"$\rho_{liquid}$")
+plt.title(r"Plot of $||\mathbf{v}||$ vs. domain size $d$, $\rho_{solid}=$"+str(rb_density)+r"$\rho_{fluid}$")
 plt.xlabel(r"$d$")
 plt.ylabel(r"$||\mathbf{v}||$")
 

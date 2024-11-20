@@ -132,9 +132,19 @@ for frame in range(start, end):
         #ax.set_xlim([-3, 3])
         #ax.set_ylim([-1.3, 2.0])
         # for big_up cup
-        ax.set_xlim([-4.0,5.0])
-        ax.set_ylim([-1.5, 2.5])
+        ax.set_xlim([-3, 3.3])
+        ax.set_ylim([-3, 3])
         ax.set_aspect('equal')
+
+        ax.set_xlim([-2, 2.4])
+        ax.set_ylim([-2, 2.4])
+        ax.set_aspect('equal')
+
+
+        # a hacky way to make the rounded test look nicer...
+        #plt.fill([-2.02,-2.02,-2.18,-2.18],[-1,2.18,2.18,1],"white")
+        #plt.fill([2.02,2.02,2.19,2.19],[-1,2.18,2.18,1],"white")
+        #plt.fill([-.98,-.98,.98,.98],[-0.4,2.18,2.18,-0.4],"white")
 
         if len(sys.argv)>1:
             if "-showpoints" in sys.argv:
@@ -168,8 +178,8 @@ for frame in range(start, end):
         plt.gca().spines['right'].set_visible(False) 
         plt.gca().spines['bottom'].set_visible(False) 
         plt.gca().spines['left'].set_visible(False) 
-        #plt.xticks([])
-        #plt.yticks([])
+        plt.xticks([])
+        plt.yticks([])
         
         
         #plt.text(-2.9, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
@@ -179,10 +189,13 @@ for frame in range(start, end):
 
         # for wide cup
         #plt.text(2.4, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(2.4, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(2.4, -2.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)plt.text(2.4, -2.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(2.4, -2.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         # for extra wide cup
-        plt.text(4.0, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(4.0, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         # for big cup
-        #plt.text(1.8, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        plt.text(1.8, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
 
         # area
         #plt.text(4.0, -0.9, "area: {area:.2f}".format(area=area), fontsize = 11)

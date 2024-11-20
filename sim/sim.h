@@ -73,6 +73,8 @@ class Sim
         void step_BEM_solve(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn, std::vector<Eigen::Vector3d>& V_rigidBodies);
         void step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen::VectorXd& p, Eigen::VectorXd& dpdn);
         void step_BEM_rigidBodyV(std::vector<Eigen::Vector3d> & V_rigidBodies);
+
+        bool check_point_in_solids(Eigen::Vector2d& x);
 };
 
 #endif

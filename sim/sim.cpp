@@ -135,6 +135,7 @@ void Sim::run(){
     if( SimOptions::strValue("output-dir").length() >0 ){
         std::__fs::filesystem::create_directory("./out/"+SimOptions::strValue("output-dir"));
         outdirString = SimOptions::strValue("output-dir")+"/";
+        std::cout<<"Sim set to output files to directory ./out/"+outdirString<<std::endl;
     }
 
     for (int i=0; i<steps; i++){
@@ -156,10 +157,12 @@ void Sim::run(){
         // testing buoyancy: we output the rigid body velocity 
         if(i==0) {
             if (buoyancy_test == true){
+                std::cout<<"Outputting velocity of rigid body after one time step to ./out/buoyancy_tests/"+std::to_string(m.verts.size())+".txt"<<std::endl;
                 outputPostStepV(std::to_string(m.verts.size())+".txt", "./out/buoyancy_tests/");
             }
             if (added_mass_test == true){
-                outputPostStepV(std::to_string( (int)(SimOptions::doubleValue("size-outer")) )+".txt", "./out/added_mass_tests/added_mass_"+std::to_string((int)(rigidBodies_unscripted[0]->rho*10))+"/");
+                std::cout<<"Outputting velocity of rigid body after one time step to ./out/added_mass_tests/added_mass_"+std::to_string((int)(rigidBodies_unscripted[0]->rho*10))+"/"+std::to_string( (int)(SimOptions::doubleValue("size-outer"))) + "_" + std::to_string(rigidBodies_unscripted[0]->verts.size())+".txt"<<std::endl;
+                outputPostStepV(std::to_string( (int)(SimOptions::doubleValue("size-outer"))) + "_" + std::to_string(rigidBodies_unscripted[0]->verts.size())+".txt", "./out/added_mass_tests/added_mass_"+std::to_string((int)(rigidBodies_unscripted[0]->rho*10))+"/");
             }
         }
 
@@ -344,14 +347,18 @@ void Sim::step_sim(double curr_t){
     
     step_HHD();
 
-    /*for (size_t i=0; i<m.vels.size(); i++){
-        std::cout<<i<<": "<<m.vels[i].x()<<", "<<m.vels[i].y()<<std::endl;
-    }*/
+    for (size_t i=0; i<m.vels.size(); i++){
+        //std::cout<<i<<": "<<m.vels[i].x()<<", "<<m.vels[i].y()<<std::endl;
+    }
 
     // body forces are only applied on div-free velocity field.
     step_gravity();
 
     step_BEM();
+
+    for (size_t i=0; i<m.vels.size(); i++){
+        //std::cout<<i<<": "<<m.vels[i].x()<<", "<<m.vels[i].y()<<std::endl;
+    }
 
     //step_solidinflux();
 }
@@ -631,8 +638,9 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
             
             BC_p[i] = sigma * H_i * dt;     // known
             BC_dpdn[i] = 0;                 // unknown
-            if(abs(BC_p[i])<=5e-16)
-                BC_p[i] = 0;
+            if(abs(BC_p[i])<=5e-16){
+            //    BC_p[i] = 0;
+            }
             //std::cout<<i<<": "<<"p "<<BC_p[i]<<std::endl;
         }
         // 'solid' vertex: if it is explicity solid vertex or both incident faces are solid faces
@@ -641,8 +649,9 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
 
             BC_p[i] = 0;
             BC_dpdn[i] = n_i.dot(m.vels[i]) * rho;
-            if(abs(BC_dpdn[i])<=5e-16)
-                BC_dpdn[i] = 0;
+            if(abs(BC_dpdn[i])<=5e-16){
+            //    BC_dpdn[i] = 0;
+            }
             //std::cout<<i<<": "<<"dpdn "<<BC_dpdn[i]<<std::endl;
         }
         // triple junction
@@ -681,10 +690,10 @@ void Sim::step_BEM_BC(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn){
 
             BC_p[i] = pressure_jump_normal_to_triple_junction * dt;
             BC_dpdn[i] = n_solid_outward.dot(m.vels[i]) * rho; // Note: this is dpdn_s only, not the full dpdn
-            if(abs(BC_p[i])<=5e-16)
+            /*if(abs(BC_p[i])<=5e-16)
                 BC_p[i] = 0;
             if(abs(BC_dpdn[i])<=5e-16)
-                BC_dpdn[i] = 0;
+                BC_dpdn[i] = 0;*/
             //std::cout<<i<<": "<<"p "<<BC_p[i]<<", dpdn "<<BC_dpdn[i]<<std::endl;
         }
     }
@@ -1068,9 +1077,9 @@ void Sim::step_BEM_gradP(Eigen::VectorXd& BC_p, Eigen::VectorXd& BC_dpdn, Eigen:
             /*
             std::cout<<"gradp_proj: "<<gradp_proj<<std::endl;
             std::cout<<"gradp_proj_rhs: "<<gradp_proj_rhs<<std::endl;
+            std::cout<<"gradp: "<<gradp<<std::endl;
             */
             //std::cout<<i<<" gradp: "<<gradp<<std::endl;
-            
             dv[i] = -(1.0/rho) * gradp;
         }
     }
@@ -1182,7 +1191,7 @@ void Sim::genMarkerParticles(double l, double r, double b, double t, double spac
         for (double y=b; y<=t; y+=spacing){
             Eigen::Vector2d marker(x,y);
             double dist_to_liquid = m.signed_min_dist(marker);
-            if ( dist_to_liquid>min_dist_to_liquid_allowed){
+            if ( dist_to_liquid>min_dist_to_liquid_allowed && !(check_point_in_solids(marker))){
                 tmpMarkers.push_back(marker);
             }
         }
@@ -1192,4 +1201,18 @@ void Sim::genMarkerParticles(double l, double r, double b, double t, double spac
     for(size_t i = 0; i<tmpMarkers.size(); i++){
         markerparticles[i] = tmpMarkers[i];
     }
+}
+
+bool Sim::check_point_in_solids(Eigen::Vector2d& x){
+    for(size_t i=0; i<rigidBodies_unscripted.size(); i++){
+        if (rigidBodies_unscripted[i]->windingNumber(x)>1.0e-8){
+            return true;
+        }
+    }
+    for(size_t i=0; i<rigidBodies_scripted.size(); i++){
+        if (rigidBodies_scripted[i]->windingNumber(x)>1.0e-8){
+            return true;
+        }
+    }
+    return false;
 }

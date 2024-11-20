@@ -12,9 +12,9 @@ f 3 4
 f 4 5
 f 5 0
 
-translation -.7 0
+translation 0 -1
 
 u_rotational 0
 u_translational 0 0
 
-rho 1
+rho 0.5

@@ -26,8 +26,9 @@ for i in range(start,end):
 vels = vels[vels[:,0].argsort()]
 print(vels)
 
-errs = np.abs(vels[:,1] - (0.0001)*(0.5/1.5))
+#errs = np.abs(vels[:,1] - (0.0001)*(0.5/1.5))
 #errs = np.abs(vels[:,1] - (0.0001)*(.3))
+errs = np.abs(vels[:,1])
 log_errs = np.log(errs)
 log_n = np.log(vels[:,0])
 
@@ -40,7 +41,7 @@ print(a)
 #plt.plot(log_n,log_errs)
 plt.scatter(log_n,log_errs, zorder=1)
 
-plt.title(r"log-log plot of $V_{error}$ vs. mesh resolution $N$")
+plt.title(r"Log-log plot of $V_{error}$ vs. mesh resolution $N$")
 plt.xlabel(r"log $|N|$")
 plt.ylabel(r"log $|V|$")
 

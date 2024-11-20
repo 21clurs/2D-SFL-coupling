@@ -1,10 +1,10 @@
-scene-file ./in/liquids/u_shape_actual.txt
+scene-file ./in/liquids/u_shape_thin.txt
 
-output-dir coupled_blocks_oscillation_test_160
+output-dir u_steady_test_80
 
-time-step 0.005
+time-step 0.01
 simulation-time 40
-output-frame-frequency 20
+output-frame-frequency 10
 gravity -1
 
 sigma-la 0
@@ -12,7 +12,7 @@ sigma-sl 0
 sigma-sa 0
 rho 1
     
-mesh-size-n 160
+mesh-size-n 80
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.3
 mesh-edge-min-ratio 0.7
@@ -28,9 +28,8 @@ markers-bottom -1.5
 markers-top 1.5
 markers-spacing 0.1
 
-num-rb 4
+num-rb 2
 rigid-body-file-1 ./in/solids/square_stationary.txt
 rigid-body-file-2 ./in/solids/cup_bigger_up.txt
-rigid-body-file-3 ./in/solids/u_test_block_rb.txt
-# rigid-body-file-4 ./in/solids/u_test_circle_rb.txt
-rigid-body-file-4 ./in/solids/u_test_block2_rb.txt
+# rigid-body-file-3 ./in/solids/u_test_block_rb.txt
+# rigid-body-file-4 ./in/solids/u_test_block2_rb.txt

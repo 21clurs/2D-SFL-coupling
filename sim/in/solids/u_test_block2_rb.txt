@@ -18,4 +18,4 @@ clamp_translation_x 1
 clamp_translation_y 0
 clamp_rotation 1
 
-rho 1.2
+rho 2.0

@@ -2,19 +2,19 @@ scene rectangle
 width 2
 height 2
 
-output-dir cup_12
+output-dir cup_g10_20
 
-time-step 0.001
+time-step 0.01
 simulation-time 40
-output-frame-frequency 200
-gravity -1
+output-frame-frequency 20
+gravity -10
 
 sigma-la 0
 sigma-sl 0
 sigma-sa 0
 rho 1
     
-mesh-size-n 12
+mesh-size-n 20
 mesh-remesh-iters 6
 mesh-edge-max-ratio 1.3
 mesh-edge-min-ratio 0.7

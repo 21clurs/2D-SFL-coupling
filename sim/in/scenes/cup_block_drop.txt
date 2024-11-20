@@ -5,7 +5,7 @@ height 2
 output-dir disk_floating_density25_90
 
 time-step 0.005
-simulation-time 40.0
+simulation-time 40.1
 output-frame-frequency 20
 gravity -1
 
@@ -31,8 +31,5 @@ markers-top 1
 markers-spacing 0.1
 
 num-rb 2
-# rigid-body-file-1 ./in/solids/square_rb_higher.txt
-# rigid-body-file-1 ./in/solids/circle_rb_3.txt
 rigid-body-file-1 ./in/solids/circle_rb_5.txt
-# rigid-body-file-1 ./in/solids/boat_rb.txt
 rigid-body-file-2 ./in/solids/cup_wider.txt

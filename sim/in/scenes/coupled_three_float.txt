@@ -1,0 +1,36 @@
+scene generic_square_donut
+size-outer 4
+
+output-dir coupled_disk_in_cup_density05_again_round_120
+
+time-step 0.005
+simulation-time 40
+output-frame-frequency 20
+gravity -1
+
+sigma-la 1
+sigma-sl 1
+sigma-sa 1
+rho 1
+    
+mesh-size-n 120
+mesh-remesh-iters 6
+mesh-edge-max-ratio 1.3
+mesh-edge-min-ratio 0.7
+
+mesh-collision-epsilon 0.01
+
+mesh-initial-velocity zero
+
+show-marker-particles 1
+markers-left -2
+markers-right 2
+markers-bottom -2
+markers-top 2
+markers-spacing 0.1
+
+num-rb 4
+rigid-body-file-1 ./in/solids/circle1_rb_5.txt
+rigid-body-file-2 ./in/solids/cup_bigger_round.txt
+rigid-body-file-3 ./in/solids/circle2_rb_3.txt
+rigid-body-file-4 ./in/solids/circle3_rb_3.txt

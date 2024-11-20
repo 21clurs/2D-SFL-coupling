@@ -39,7 +39,7 @@ log_n = np.log(periods[:,0])
 plt.plot(log_n,log_errs)
 plt.scatter(log_n,log_errs)
 
-plt.title(r"log-log plot of $T_{error}$ vs. mesh resolution $N$")
+plt.title(r"Log-log plot of $T_{error}$ vs. mesh resolution $N$")
 plt.xlabel(r"log $|N|$")
 plt.ylabel(r"log $|T-\pi|$")
 #plt.grid(True)
