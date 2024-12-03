@@ -287,6 +287,10 @@ bool RigidBody::loadMeshFromFile(RigidBody &m, std::string infileName){
     
     assert(v.size() == f.size());
 
+    m.verts.resize(v.size());
+    m.verts_no_transform.resize(v.size());
+    m.faces.resize(f.size());
+
     m.verts_no_transform = v;
     m.verts = v;
     m.faces = f;

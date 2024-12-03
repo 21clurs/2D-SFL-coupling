@@ -44,6 +44,7 @@ plt.gca().spines['right'].set_visible(False)
 
 #plt.show()
 plt.savefig(f'./plots/V_density_{target_domain_size:02d}.png', format="png")
+plt.savefig(f'./plots/V_density_{target_domain_size:02d}.pdf', format="pdf")
 
 
 

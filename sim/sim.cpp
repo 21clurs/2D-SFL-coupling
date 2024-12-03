@@ -1,5 +1,6 @@
 #include "sim.h"
 
+#include <chrono> // timing
 #include <iostream>
 #include <filesystem>
 #include <fstream> 
@@ -138,6 +139,10 @@ void Sim::run(){
         std::cout<<"Sim set to output files to directory ./out/"+outdirString<<std::endl;
     }
 
+    // keeping track of mesh size info and timestep size
+    std::vector<int> per_step_mesh_size(steps);
+    std::vector<double> per_step_timing(steps);
+
     for (int i=0; i<steps; i++){
         // testing stuff
         if (oscillation_test == true){
@@ -149,11 +154,19 @@ void Sim::run(){
             outputFrame(outdirString+std::to_string(frame_num)+".txt");
             frame_num++;
         }
-        try {
-            step_sim(i*dt);
-        } catch (...) {
-            std::cout<<frame_num<<" frames generated."<<std::endl; 
-        }
+        // stepping sim and timing
+        auto time_step_start = std::chrono::high_resolution_clock::now();
+        step_sim(i*dt);
+        auto time_step_end = std::chrono::high_resolution_clock::now();
+
+        // storing stuff we want to keep track of
+        per_step_mesh_size[i] = m.verts.size();
+        //per_step_timing[i] = std::chrono::duration_cast<std::chrono::milliseconds>(time_step_end-time_step_start);
+        double step_time_ms_double =  std::chrono::duration<double, std::milli>(time_step_end-time_step_start).count();
+        //std::chrono::duration<double, std::milli> step_time_ms_double = time_step_end-time_step_start;
+        //double nanosecs = duration_cast<nanoseconds>(new_time - old_time).count();
+        per_step_timing[i] = step_time_ms_double;
+
         // testing buoyancy: we output the rigid body velocity 
         if(i==0) {
             if (buoyancy_test == true){
@@ -178,6 +191,28 @@ void Sim::run(){
     }
 
     std::cout<<frame_num<<" frames successfully generated!"<<std::endl; 
+
+    // timing/mesh data
+    float sum_mesh_size = 0;
+    int max_mesh_size = 0;
+    double sum_timing_size = 0;
+    double max_timing_size = 0;
+    for (int i=0; i<steps; i++){
+        sum_mesh_size += per_step_mesh_size[i];
+        if(per_step_mesh_size[i] > max_mesh_size)
+            max_mesh_size = per_step_mesh_size[i];
+
+        sum_timing_size += per_step_timing[i];
+        if (per_step_timing[i] > max_timing_size)
+            max_timing_size = per_step_timing[i];
+    }
+    float avg_mesh_size = (float) sum_mesh_size/steps;
+    double avg_timing_size = sum_timing_size/steps;
+    std::cout<<"Average mesh size: "<<avg_mesh_size<<std::endl;
+    std::cout<<"Max mesh size: "<<max_mesh_size<<std::endl;
+    std::cout<<"Average timing: "<<avg_timing_size<<std::endl;
+    std::cout<<"Max timing: "<<max_timing_size<<std::endl;
+    std::cout<<"Total timing: "<<sum_timing_size<<std::endl;
 }
 
 Sim::Sim(){

@@ -36,8 +36,14 @@ errs = periods[:,1]-math.pi
 log_errs = np.log(errs)
 log_n = np.log(periods[:,0])
 
-plt.plot(log_n,log_errs)
+#plt.plot(log_n,log_errs)
 plt.scatter(log_n,log_errs)
+
+#find line of best fit
+a, b = np.polyfit(log_n, log_errs, 1)
+x = np.linspace(min(log_n),max(log_n))
+plt.plot(x, a*x+b, color="orange", zorder=0)
+print(a)
 
 plt.title(r"Log-log plot of $T_{error}$ vs. mesh resolution $N$")
 plt.xlabel(r"log $|N|$")
@@ -48,6 +54,7 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False) 
 
 #plt.show()
-plt.savefig('./plots/loglog_Terr_N.png', format="png")
+plt.savefig('./plots/loglog_Terr_N_bestfit.png', format="png")
+plt.savefig('./plots/loglog_Terr_N_bestfit.pdf', format="pdf")
 
     

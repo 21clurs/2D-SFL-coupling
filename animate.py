@@ -132,19 +132,38 @@ for frame in range(start, end):
         #ax.set_xlim([-3, 3])
         #ax.set_ylim([-1.3, 2.0])
         # for big_up cup
-        ax.set_xlim([-3, 3.3])
-        ax.set_ylim([-3, 3])
-        ax.set_aspect('equal')
+        #ax.set_xlim([-3, 3.3])
+        #ax.set_ylim([-3, 3])
 
-        ax.set_xlim([-2, 2.4])
-        ax.set_ylim([-2, 2.4])
+        #ax.set_xlim([-2, 2.4])
+        #ax.set_ylim([-2, 2.4])
+
+        #ax.set_xlim([-.4, .4])
+        #ax.set_ylim([-.4, .4])
+        
+        
+        #ax.set_xlim([-1.8, 2.5])
+        #ax.set_ylim([-1.8, 2.2])
+        # oscillating blocks, oscillating block and disk...
+        #ax.set_xlim([-2,2.4])
+        #ax.set_ylim([-2,2.4])
+        # oscillating blocks, oscillating block and disk...
+        #ax.set_xlim([-2.4,3.8])
+        #ax.set_ylim([-1.3, 2.4])
+        # multibody blocks in cup...
+        #ax.set_xlim([-2.4, 3])
+        #ax.set_ylim([-2.4, 2.8])
+        # oscillating blocks, oscillating block and disk...
+        ax.set_xlim([-2.4,2.4])
+        ax.set_ylim([-1.3, 2.4])
+        
         ax.set_aspect('equal')
 
 
         # a hacky way to make the rounded test look nicer...
-        #plt.fill([-2.02,-2.02,-2.18,-2.18],[-1,2.18,2.18,1],"white")
-        #plt.fill([2.02,2.02,2.19,2.19],[-1,2.18,2.18,1],"white")
-        #plt.fill([-.98,-.98,.98,.98],[-0.4,2.18,2.18,-0.4],"white")
+        #plt.fill([-2.01,-2.01,-2.18,-2.18],[-1,2.18,2.18,1],"white")
+        #plt.fill([2.01,2.01,2.19,2.19],[-1,2.18,2.18,1],"white")
+        #plt.fill([-.99,-.99,.99,.99],[-0.4,2.18,2.18,-0.4],"white")
 
         if len(sys.argv)>1:
             if "-showpoints" in sys.argv:
@@ -195,13 +214,20 @@ for frame in range(start, end):
         # for extra wide cup
         #plt.text(4.0, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
         # for big cup
-        plt.text(1.8, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 11)
+        #plt.text(1.8, -1.7, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 24)
+        # oscillation
+        #plt.text(.28, -.38, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 16)
+        #plt.text(2.4, -2.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 18)
+        plt.text(2.4, -1.2, "t: {curr_t:.2f}".format(curr_t = outFreq*dt*frame), fontsize = 18)
 
         # area
         #plt.text(4.0, -0.9, "area: {area:.2f}".format(area=area), fontsize = 11)
 
         #plt.show()
-        plt.savefig('./outFrames/' + simFramesDir + 'frame-'+str(frame)+'.png', format="png", bbox_inches="tight")
+        if len(sys.argv)>1 and "-pdf" in sys.argv:
+            plt.savefig('./outFrames/' + simFramesDir + 'frame-'+str(frame)+'.pdf', format="pdf", bbox_inches="tight")
+        else:
+            plt.savefig('./outFrames/' + simFramesDir + 'frame-'+str(frame)+'.png', format="png", bbox_inches="tight")
         
         plt.clf()
 

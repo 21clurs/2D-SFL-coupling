@@ -1,11 +1,13 @@
 scene oscillation_test
 
-test oscillation
+# test oscillation
+output-dir oscillating_droplet_128
 
 radius 1
 
 time-step 0.002
 simulation-time 5
+output-frame-frequency 5
 gravity 0
 
 sigma-la 0.666666666666666666666666666666666667

@@ -61,8 +61,8 @@ print(a)
 
 #plt.plot(log_n,log_errs)
 #plt.scatter(domain, velocity_data, zorder=1)
-#plt.scatter(domain, errs, zorder=1)
-plt.scatter(log_domain, log_errs, zorder=1)
+plt.scatter(domain, errs, zorder=1)
+#plt.scatter(log_domain, log_errs, zorder=1)
 
 #plt.gca().set_ylim(bottom=0)
 
@@ -80,4 +80,4 @@ plt.gca().spines['right'].set_visible(False)
 
 #plt.show()
 plt.savefig(f'./plots/V_resolution_{int(rb_density*10):02d}.png', format="png")
-
+plt.savefig(f'./plots/V_resolution_{int(rb_density*10):02d}.pdf', format="pdf")

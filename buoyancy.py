@@ -6,7 +6,7 @@ import sys
 import os
 import math
 
-outdir = "./sim/out/buoyancy_tests/"
+outdir = "./sim/out/buoyancy_tests_copy/"
 test_files = os.listdir(outdir)
 start = 0
 end = len(test_files)
@@ -21,7 +21,6 @@ for i in range(start,end):
             v = [float(r[0]),float(r[1])]
             vels[i,0] = n
             vels[i,1] = np.linalg.norm(v)
-
 
 vels = vels[vels[:,0].argsort()]
 print(vels)
@@ -41,9 +40,9 @@ print(a)
 #plt.plot(log_n,log_errs)
 plt.scatter(log_n,log_errs, zorder=1)
 
-plt.title(r"Log-log plot of $V_{error}$ vs. mesh resolution $N$")
+plt.title(r"Log-log plot of $||\mathbf{v}||$ vs. mesh resolution $N$")
 plt.xlabel(r"log $|N|$")
-plt.ylabel(r"log $|V|$")
+plt.ylabel(r"log $||\mathbf{v}||$")
 
 #plt.grid(True)
 plt.gca().spines['top'].set_visible(False) 
@@ -51,3 +50,4 @@ plt.gca().spines['right'].set_visible(False)
 
 #plt.show()
 plt.savefig('./plots/loglog_Verr_N.png', format="png")
+plt.savefig('./plots/loglog_Verr_N.pdf', format="pdf")

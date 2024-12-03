@@ -223,7 +223,7 @@ namespace {
             f[i+n_inner][1] = n_inner + (i+1)%n_outer;
         }
     }
-    void gen_generic_square_donut(int n, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
+    void gen_generic_square_donut(int n_input, const Eigen::Vector2d& center, double sideLength_outer, std::vector<Eigen::Vector2d> &v, std::vector<Eigen::Vector2i> &f){
         // assumes at least one rigid body that this donut spawns around
         // and assumes that rigid body is stored in rigid-body-file-1
         assert(SimOptions::intValue("num-rb") >= 1);
@@ -231,10 +231,9 @@ namespace {
         RigidBody::loadMeshFromFile(*m, SimOptions::strValue("rigid-body-file-1"));
 
         int n_inner = m->verts.size();
-        int n_outer = n;
-        n_outer = n_outer + n_outer%4;
+        int n_outer = n_input + (4-n_input%4);
 
-        n = n_inner + n_outer;
+        int n = n_inner + n_outer;
 
         // creates a rough square donut around an arbitrary rigid body shape in the middle
         v.resize(n);
@@ -534,7 +533,7 @@ void Scenes::setupSceneShape(LiquidMesh& m, const std::string & scenename){
 
             gen_generic_swiss_cheese(N, Eigen::Vector2d(0.0,0.0), d_outer, v, f);
 
-        }else if (scenename == "circle_inverted"){
+        } else if (scenename == "circle_inverted"){
             double r = SimOptions::doubleValue("radius");
 
             gen_ellipse_invert(N, Eigen::Vector2d(0.0,0.0), r, r, v, f);

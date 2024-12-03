@@ -135,4 +135,4 @@ translation 0 0
 u_rotational 0
 u_translational 0 0
 
-rho 0.9
+rho 1
